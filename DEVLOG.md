@@ -35,7 +35,9 @@ Time spent: C3.
 |---|---|
 | Unit tests T-01 to T-22 + 5 extra | `node n8n/test/test_brain.js` -> 27 passed |
 | Code nodes run with stubs | assemble + stub run: normalize, extract, brain, parse LLM all produce expected items |
-| Workflow created on n8n | id in `n8n/build/workflow_id.txt` |
-| STT real audio | pending (see below) |
+| Workflow created and active on n8n | id `qAUgmP8Q7cvciLX9`, Telegram webhook set on @Kuicklobot, 0 pending updates |
+| STT real audio | pm2 `bhavna-stt` on Oracle, two real Hinglish wavs transcribed, near word for word. `docs/bhavna_integration_notes.md` |
 | M-01 real Telegram typed order | pending |
 | M-03 swap inside and after 60 s | pending |
+
+Note: a fake update POSTed to the webhook returns 403 (n8n checks the Telegram secret token). Real chat test must come from the owner.
