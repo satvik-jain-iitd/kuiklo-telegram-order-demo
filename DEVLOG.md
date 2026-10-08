@@ -78,3 +78,13 @@ Decision:
 - Free tier only: ₹100 credits, ₹3 per 1K chars. Greeting audio pre-seeded in the cache from one test call, so it costs nothing again.
 Failed: none new. Earlier today: inline buttons never reached Telegram because `replyMarkup` was an expression; n8n hides `inlineKeyboard` when the raw value is not the literal `inlineKeyboard`. Fixed with a literal.
 Verified by: 34 unit tests green; `/voice` test from Oracle -> voice bubble with button received in the owner's chat (cached: true, chars 121).
+
+## 2026-10-08 | M6 | Repo, docs, site, hosting
+Built:
+- Public repo: https://github.com/satvik-jain-iitd/kuiklo-telegram-order-demo (secret scan before push: clean; `.env`, `docs/consent/`, build output ignored).
+- Catalog grown to 197 synthetic rows, 114 products, 14 categories, with aliases and Devanagari names for every product (T-32, T-33).
+- README written for the founder. `docs/` mirrors the bhavna.ai documentation process (plan, architecture, ADRs, risks, backlog, process, journal, discussions, demos, tests, research).
+- Case study site at GitHub Pages from `docs/index.html`, in Kuiklo's brand colours (navy #0D1B3E, lime #AADF00) with the kuiklo.com logo.
+Decision:
+- "bhavna.ai always on": it stays on the Oracle box as pm2 `bhavna-stt`, `pm2 save` done, pm2 systemd unit already enabled, so it restarts on reboot. Render and Railway free tiers were rejected: they sleep on idle and give about 512 MB RAM, too small for whisper + MiniLM + torch (the service uses about 1.5 GB).
+Verified by: 35 tests green; `git push` clean; pm2 dump lists `bhavna-stt`.
