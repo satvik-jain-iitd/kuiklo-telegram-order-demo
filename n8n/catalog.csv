@@ -2,23 +2,74 @@ sku,product,brand,variant,unit,unit_price_inr,category,in_stock_flag
 ATA-001,atta,Aashirvaad,Select Sharbati,kg,48,staples,1
 ATA-002,atta,Pillsbury,Chakki Fresh,kg,52,staples,1
 ATA-003,atta,Fortune,Chakki Fresh,kg,50,staples,1
+ATA-004,atta,Patanjali,Whole Wheat,kg,44,staples,1
+CHA-001,chawal,India Gate,Everyday Basmati,kg,95,staples,1
+CHA-002,chawal,Daawat,Rozana Gold,kg,85,staples,1
+CHA-003,chawal,Kohinoor,Charminar Select,kg,78,staples,1
+CHA-004,chawal,Local,Sona Masoori,kg,58,staples,1
+DAL-001,dal,Tata Sampann,Toor (Arhar),kg,160,staples,1
+DAL-002,dal,Fortune,Toor (Arhar),kg,150,staples,1
+DAL-003,dal,Local,Toor (Arhar) loose,kg,135,staples,1
+MNG-001,moong dal,Tata Sampann,Moong Dhuli,kg,145,staples,1
+MNG-002,moong dal,Local,Moong Dhuli loose,kg,125,staples,1
+CHN-001,chana dal,Tata Sampann,Chana Dal,kg,110,staples,1
+CHN-002,chana dal,Local,Chana Dal loose,kg,95,staples,1
+MSR-001,masoor dal,Local,Masoor Malka,kg,105,staples,1
+SUJ-001,suji,Aashirvaad,Suji Rava,kg,52,staples,1
+BSN-001,besan,Rajdhani,Besan,kg,88,staples,1
+POH-001,poha,Local,Thick Poha,kg,60,staples,1
+CHE-001,cheeni,Madhur,Sugar,kg,45,staples,1
+CHE-002,cheeni,Local,Sugar loose,kg,42,staples,1
+NMK-001,namak,Tata,Iodised 1 kg,pcs,25,staples,1
+NMK-002,namak,Aashirvaad,Iodised 1 kg,pcs,22,staples,1
+TEL-001,tel,Fortune,Sunflower 1 L,pcs,140,staples,1
+TEL-002,tel,Saffola,Gold 1 L,pcs,165,staples,1
+TEL-003,tel,Dhara,Mustard (Kachi Ghani) 1 L,pcs,155,staples,1
+TEL-004,tel,Patanjali,Mustard 1 L,pcs,150,staples,1
+GHE-001,ghee,Amul,Pure Ghee 500 ml,pcs,320,dairy,1
+GHE-002,ghee,Sudha,Pure Ghee 500 ml,pcs,310,dairy,1
+DUD-001,doodh,Sudha,Toned 500 ml,pcs,26,dairy,1
+DUD-002,doodh,Amul,Taaza Toned 500 ml,pcs,27,dairy,1
+DUD-003,doodh,Amul,Gold Full Cream 500 ml,pcs,33,dairy,1
+DHI-001,dahi,Sudha,Dahi 400 g,pcs,32,dairy,1
+DHI-002,dahi,Amul,Masti Dahi 400 g,pcs,35,dairy,1
+PNR-001,paneer,Sudha,Paneer 200 g,pcs,80,dairy,1
+PNR-002,paneer,Amul,Fresh Paneer 200 g,pcs,85,dairy,1
+MKH-001,makhan,Amul,Butter 100 g,pcs,58,dairy,1
+AND-001,ande,Farm Fresh,6 pcs tray,pcs,45,dairy,1
+AND-002,ande,Farm Fresh,12 pcs tray,pcs,88,dairy,1
+BRD-001,bread,Harvest Gold,White 400 g,pcs,40,bakery,1
+BRD-002,bread,Britannia,Brown 400 g,pcs,45,bakery,1
+BRD-003,bread,Modern,Milk Bread 400 g,pcs,38,bakery,0
 ROT-001,roti,Kuiklo Kitchen,Tawa Roti,pcs,10,ready,1
-BHI-001,bhindi,Farm Fresh,Loose,kg,40,vegetables,1
+CHY-001,chai,Tata Tea,Premium 250 g,pcs,140,beverages,1
+CHY-002,chai,Red Label,Brooke Bond 250 g,pcs,135,beverages,1
+CHY-003,chai,Taj Mahal,Tea 250 g,pcs,160,beverages,1
+BIS-001,biscuit,Parle,Parle-G 800 g,pcs,80,snacks,1
+BIS-002,biscuit,Britannia,Good Day Butter 200 g,pcs,35,snacks,1
+BIS-003,biscuit,Britannia,Marie Gold 250 g,pcs,38,snacks,1
+MGI-001,maggi,Nestle,Maggi Masala 12 pack,pcs,168,snacks,1
+NMK-003,namkeen,Haldiram,Aloo Bhujia 400 g,pcs,95,snacks,1
+SBN-001,sabun,Lifebuoy,Total 125 g x4,pcs,120,household,1
+SBN-002,sabun,Dettol,Original 125 g x4,pcs,160,household,1
+SRF-001,surf,Surf Excel,Easy Wash 1 kg,pcs,140,household,1
+SRF-002,surf,Rin,Detergent Powder 1 kg,pcs,95,household,1
 ALO-001,aloo,Farm Fresh,Loose,kg,25,vegetables,1
 ALO-002,aloo,Farm Fresh,Baby Potato,kg,35,vegetables,1
 PYZ-001,pyaaz,Farm Fresh,Loose,kg,30,vegetables,1
 TMT-001,tamatar,Farm Fresh,Loose,kg,35,vegetables,1
-DUD-001,doodh,Amul,Taaza Toned 500ml,pcs,27,dairy,1
-DUD-002,doodh,Sudha,Toned 500ml,pcs,25,dairy,1
-DHI-001,dahi,Amul,Masti 400g,pcs,35,dairy,1
-CHA-001,chawal,India Gate,Everyday Basmati,kg,95,staples,1
-CHA-002,chawal,Daawat,Rozana Gold,kg,85,staples,1
-DAL-001,dal,Tata Sampann,Toor,kg,160,staples,1
-DAL-002,dal,Fortune,Toor,kg,150,staples,1
-CHN-001,cheeni,Madhur,Sugar,kg,45,staples,1
-TEL-001,tel,Fortune,Sunflower 1L,pcs,140,staples,1
-TEL-002,tel,Saffola,Gold 1L,pcs,165,staples,1
-NMK-001,namak,Tata,Iodised 1kg,pcs,25,staples,1
-AND-001,ande,Farm Fresh,6 pcs tray,pcs,45,dairy,1
-BRD-001,bread,Harvest Gold,White 400g,pcs,40,bakery,1
-BRD-002,bread,Britannia,Brown 400g,pcs,45,bakery,0
+BHI-001,bhindi,Farm Fresh,Loose,kg,40,vegetables,1
+GOB-001,gobhi,Farm Fresh,Phool Gobhi,kg,38,vegetables,1
+PLK-001,palak,Farm Fresh,Bunch 250 g,pcs,20,vegetables,1
+DHN-001,dhaniya,Farm Fresh,Bunch 100 g,pcs,10,vegetables,1
+MRC-001,mirch,Farm Fresh,Hari Mirch 100 g,pcs,12,vegetables,1
+ADR-001,adrak,Farm Fresh,Loose,kg,120,vegetables,1
+LSN-001,lehsun,Farm Fresh,Loose,kg,180,vegetables,1
+NBU-001,nimbu,Farm Fresh,4 pcs,pcs,20,vegetables,1
+KHR-001,kheera,Farm Fresh,Loose,kg,30,vegetables,1
+LKI-001,lauki,Farm Fresh,Loose,kg,28,vegetables,1
+SHM-001,shimla mirch,Farm Fresh,Loose,kg,60,vegetables,1
+KEL-001,kela,Farm Fresh,Dozen,pcs,50,fruits,1
+SEB-001,seb,Farm Fresh,Shimla Apple,kg,160,fruits,1
+AAM-001,aam,Farm Fresh,Malda Mango,kg,120,fruits,0
+PPT-001,papita,Farm Fresh,Loose,kg,45,fruits,1

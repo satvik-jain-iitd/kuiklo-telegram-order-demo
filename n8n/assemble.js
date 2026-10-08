@@ -98,7 +98,8 @@ const nodes = [
   { name: 'KB ask (MiniLM + Ollama)', type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [2180, 160], parameters: { method: 'POST', url: "={{ $('Config').first().json.kb_url }}", sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify({ question: $json.kb_query }) }}', options: { timeout: 90000 } } },
   { name: 'KB reply', type: 'n8n-nodes-base.code', typeVersion: 2, position: [2400, 160], parameters: { jsCode: code.kbReply } },
   { name: 'Telegram: send', type: 'n8n-nodes-base.telegram', typeVersion: 1.2, position: [2620, 300], parameters: { chatId: '={{ $json.chat_id }}', text: '={{ $json.text }}',
-    replyMarkup: '={{ $json.keyboard ? "inlineKeyboard" : "none" }}', inlineKeyboard: '={{ $json.keyboard || {} }}',
+    // replyMarkup must be a literal: n8n decides whether `inlineKeyboard` is visible from the RAW value, so an expression here hides the keyboard
+    replyMarkup: 'inlineKeyboard', inlineKeyboard: '={{ $json.keyboard || { rows: [] } }}',
     additionalFields: { appendAttribution: false, parse_mode: 'HTML', disable_web_page_preview: true } }, credentials: TG },
   { name: 'Telegram: ack button', type: 'n8n-nodes-base.telegram', typeVersion: 1.2, position: [1960, 500], parameters: { resource: 'callback', operation: 'answerQuery', queryId: "={{ $('Order brain').first().json.callback_query_id }}", additionalFields: {} }, credentials: TG },
   { name: 'Button press?', type: 'n8n-nodes-base.if', typeVersion: 2.2, position: [2180, 300], parameters: { options: {}, conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2 }, combinator: 'and',

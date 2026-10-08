@@ -15,7 +15,17 @@ const ALIASES = { atta: ['atta', 'aata', 'flour'], roti: ['roti', 'rotiyan', 'ro
   aloo: ['aloo', 'alu', 'potato', 'potatoes'], pyaaz: ['pyaaz', 'pyaz', 'onion', 'onions'], tamatar: ['tamatar', 'tomato', 'tomatoes'],
   doodh: ['doodh', 'dudh', 'milk'], dahi: ['dahi', 'curd'], chawal: ['chawal', 'chaval', 'rice'], dal: ['dal', 'daal'],
   cheeni: ['cheeni', 'chini', 'sugar', 'shakkar'], tel: ['tel', 'oil'], namak: ['namak', 'salt'], ande: ['ande', 'anda', 'egg', 'eggs'],
-  bread: ['bread', 'doubleroti'] };
+  bread: ['bread', 'doubleroti', 'double_roti'],
+  'moong dal': ['moong_dal', 'moong', 'mung'], 'chana dal': ['chana_dal'], 'masoor dal': ['masoor_dal', 'masoor'], suji: ['suji', 'sooji', 'rava', 'semolina'],
+  besan: ['besan'], poha: ['poha', 'chura', 'chuda'], ghee: ['ghee'], paneer: ['paneer'], makhan: ['makhan', 'butter'], chai: ['chai', 'tea', 'chaipatti', 'chai_patti'],
+  biscuit: ['biscuit', 'biscuits', 'biskut', 'parle', 'parleg', 'parle_g'], maggi: ['maggi', 'noodles'], namkeen: ['namkeen', 'bhujia'], sabun: ['sabun', 'soap'],
+  surf: ['surf', 'detergent', 'washing_powder'], gobhi: ['gobhi', 'gobi', 'cauliflower', 'phool_gobhi'], palak: ['palak', 'spinach'], dhaniya: ['dhaniya', 'dhania', 'coriander'],
+  mirch: ['mirch', 'mirchi', 'hari_mirch', 'chilli', 'chillies'], adrak: ['adrak', 'ginger'], lehsun: ['lehsun', 'lahsun', 'lasun', 'garlic'], nimbu: ['nimbu', 'lemon', 'neembu'],
+  kheera: ['kheera', 'khira', 'cucumber'], lauki: ['lauki', 'louki', 'ghiya', 'bottle_gourd'], 'shimla mirch': ['shimla_mirch', 'capsicum'], kela: ['kela', 'kele', 'banana', 'bananas'],
+  seb: ['seb', 'apple', 'apples'], aam: ['aam', 'mango', 'mangoes'], papita: ['papita', 'papaya'] };
+// two-word product names are joined before tokenizing so they match one alias
+const BIGRAMS = [['moong dal', 'moong_dal'], ['mung dal', 'moong_dal'], ['chana dal', 'chana_dal'], ['masoor dal', 'masoor_dal'], ['arhar dal', 'dal'], ['toor dal', 'dal'], ['tur dal', 'dal'],
+  ['shimla mirch', 'shimla_mirch'], ['hari mirch', 'hari_mirch'], ['phool gobhi', 'phool_gobhi'], ['double roti', 'double_roti'], ['chai patti', 'chai_patti'], ['parle g', 'parle_g'], ['washing powder', 'washing_powder'], ['bottle gourd', 'bottle_gourd']];
 const STOP = new Set(['aur', 'and', 'ka', 'ki', 'ke', 'ko', 'se', 'mein', 'me', 'chahiye', 'chaiye', 'bhej', 'do', 'dena', 'order', 'please', 'plz',
   'mujhe', 'muje', 'hai', 'ho', 'kar', 'karo', 'dijiye', 'le', 'lo', 'ek', 'bhi', 'sath', 'saath', 'wala', 'wali', 'the', 'a', 'of', 'with', 'for', 'ja', 'jao',
   'kal', 'aaj', 'parso', 'subah', 'morning', 'shaam', 'sham', 'evening', 'delivery', 'deliver', 'ghar', 'par', 'pe', 'kilo', 'kg', 'gram', 'g', 'pcs', 'piece', 'pieces', 'packet', 'pack', 'litre', 'liter', 'l', 'ltr', 'dozen', 'hona', 'chahie', 'den', 'dedo', 'bhejo', 'hello', 'hi', 'namaste']);
@@ -24,7 +34,7 @@ function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').
 function pad(s, n) { s = String(s); return s.length >= n ? s : s + ' '.repeat(n - s.length); }
 function lpad(s, n) { s = String(s); return s.length >= n ? s : ' '.repeat(n - s.length) + s; }
 function money(n) { return '₹' + (Math.round(n * 100) / 100).toString(); }
-function tokens(text) { return String(text || '').toLowerCase().replace(/[,.!?;:()]/g, ' ').replace(/(\d)(kg|g|gm|l|ltr|pcs)\b/g, '$1 $2').split(/\s+/).filter(Boolean); }
+function tokens(text) { let t = String(text || '').toLowerCase(); for (const [a, b] of BIGRAMS) t = t.split(a).join(b); return t.replace(/[,.!?;:()]/g, ' ').replace(/(\d)(kg|g|gm|l|ltr|pcs)\b/g, '$1 $2').split(/\s+/).filter(Boolean); }
 function productOf(tok) { for (const p in ALIASES) if (ALIASES[p].includes(tok)) return p; return null; }
 function numOf(tok) { if (/^\d+(\.\d+)?$/.test(tok)) return parseFloat(tok); return NUM_WORDS[tok] ?? null; }
 function fmtDate(d) { return d.toISOString().slice(0, 10); }
@@ -97,12 +107,27 @@ function summary(session, cfg, now) {
 function kb(rows) { return { rows: rows.map(r => ({ row: { buttons: r.map(([text, data]) => ({ text, additionalFields: { callback_data: data } })) } })) }; }
 function maskPhone(p) { const d = String(p).replace(/\D/g, ''); return d.length >= 4 ? d.slice(0, 2) + 'x'.repeat(d.length - 4) + d.slice(-2) : 'xx'; }
 
+
+// ---- brand change by text ("chawal ka dusra brand", "daawat rozana gold") ----
+function brandRowsInText(text, catalog) {
+  const t = ' ' + String(text || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  const hit = r => { const b = r.brand.toLowerCase(); if (b !== 'local' && b !== 'farm fresh' && t.includes(' ' + b + ' ')) return 2; const v = r.variant.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 3); return v.length && v.every(w => t.includes(' ' + w + ' ')) ? 1 : 0; };
+  return catalog.map(r => [hit(r), r]).filter(([h]) => h > 0).sort((a, b) => b[0] - a[0]).map(([, r]) => r);
+}
+function brandIntent(text, s) {
+  if (!/brand|badal|badlo|dusra|doosra|change|alag|option|kaunsa|konsa|kaun ?sa/i.test(text)) return null;
+  const ps = tokens(text).map(productOf).filter(Boolean);
+  return s.items.find(it => ps.includes(it.product)) || (s.items.length === 1 ? s.items[0] : null);
+}
+
+let CATALOG = []; // set per brain() call so ask() can list brands
 // ---- state machine ----
 const FIELDS = ['date', 'slot', 'name', 'phone', 'area'];
-function missing(s) { if (s.items.some(it => it.qty === null)) return 'qty'; for (const f of FIELDS) { if (f === 'date' && !s.delivery.date) return f; if (f === 'slot' && !s.delivery.slot) return f; if (f === 'phone' && !s.customer.phone_masked) return f; if (['name', 'area'].includes(f) && !s.customer[f]) return f; } return null; }
+function missing(s) { if (s.items.some(it => it.qty === null)) return 'qty'; if (s.items.some(it => it.brand_chosen === false)) return 'brand'; for (const f of FIELDS) { if (f === 'date' && !s.delivery.date) return f; if (f === 'slot' && !s.delivery.slot) return f; if (f === 'phone' && !s.customer.phone_masked) return f; if (['name', 'area'].includes(f) && !s.customer[f]) return f; } return null; }
 function ask(s, field, now) {
   const k = fmtDate(addDays(now, 1)), t = fmtDate(now);
   switch (field) {
+    case 'brand': { const it = s.items.find(i => i.brand_chosen === false); const opts = brandsFor(CATALOG, it.product); return { text: `${cap(it.product)} kaunsa brand chahiye?`, keyboard: kb([...opts.map(r => [[`${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`, `brand:${it.sku}:${r.sku}`]]), [['Koi bhi chalega', `brandany:${it.sku}`]]]) }; }
     case 'qty': { const it = s.items.find(i => i.qty === null); return { text: `${cap(it.product)} kitna chahiye? (jaise: 1 kg, 500 g)`, keyboard: kb([[['500 g', `qty:${it.product}:0.5:kg`], ['1 kg', `qty:${it.product}:1:kg`], ['2 kg', `qty:${it.product}:2:kg`]]]) }; }
     case 'date': return { text: 'Delivery kab chahiye?', keyboard: kb([[['Aaj', `date:${t}`], ['Kal', `date:${k}`]]]) };
     case 'slot': return { text: 'Ek detail chahiye: Delivery slot kya rakhein?', keyboard: kb([[['Morning', 'slot:morning'], ['Evening', 'slot:evening']]]) };
@@ -130,7 +155,7 @@ function changeSummary(s, old, nu, cfg) {
 function answerQuestion(text, s, catalog, cfg, now) {
   const t = String(text || '').toLowerCase();
   if (/stock|bache|bacha|kitne hain store|available kitn/.test(t)) return 'Stock ki jaankari main nahi de sakta.';
-  if (/brand|option|variety|kaun ?se/.test(t)) { const p = tokens(t).map(productOf).find(Boolean); if (p) { const b = brandsFor(catalog, p); return b.length ? `${cap(p)} ke brand options (demo catalog):\n` + b.map(r => `• ${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`).join('\n') : `${cap(p)} abhi catalog mein nahi hai.`; } }
+  if (/brand|option|variety|kaun ?se/.test(t)) { const p = tokens(t).map(productOf).find(Boolean); if (p && s.items.some(it => it.product === p)) return null; if (p) { const b = brandsFor(catalog, p); return b.length ? `${cap(p)} ke brand options (demo catalog):\n` + b.map(r => `• ${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`).join('\n') : `${cap(p)} abhi catalog mein nahi hai.`; } }
   const has = s.items.length > 0;
   if (/kitne item|items? kitn|kya kya hai|list/.test(t)) return has ? `Aapke order mein ${s.items.length} item hain:\n` + s.items.map(itemLine).join('\n') : null;
   if (/total|kitna (paisa|hua|bill)|amount/.test(t)) return has ? `Total: ${money(price(s, cfg).total)} (demo values, COD)` : null;
@@ -140,7 +165,7 @@ function answerQuestion(text, s, catalog, cfg, now) {
 
 function brain(update, store, cfg, now) {
   now = now || new Date();
-  const catalog = loadCatalog(cfg);
+  const catalog = loadCatalog(cfg); CATALOG = catalog;
   store.sessions = store.sessions || {};
   const cid = String(update.chat_id);
   let s = store.sessions[cid] || (store.sessions[cid] = newSession(cid));
@@ -157,12 +182,16 @@ function brain(update, store, cfg, now) {
       store.orders = store.orders || []; store.orders.push(JSON.parse(JSON.stringify({ ...s, charges: price(s, cfg), payment_mode: 'COD' })));
       msgs.push({ text: `✅ Aapka order process ho raha hai.\nOrder ID: ${s.order_id}\n\n⏱️ Ek minute ke andar koi change ho to abhi bata sakte hain.`, keyboard: kb([[['🔄 Order change karna hai', 'swap'], ['👍 Sab theek hai', 'ok']]]) });
     } else if (data === 'confirm') { msgs.push({ text: s.order_id ? `Order ${s.order_id} pehle hi confirm ho chuka hai.` : 'Abhi confirm karne ke liye koi order nahi hai.', keyboard: null }); }
-    else if (data === 'edit' && s.state === 'REVIEW') { s.state = 'COLLECTING'; msgs.push({ text: 'Theek hai. Poora order dobara bhej dijiye (voice ya text), ya sirf jo badalna hai woh likhiye, jaise "atta 2 kg".', keyboard: null }); }
+    else if (data === 'edit' && s.state === 'REVIEW') { s.state = 'COLLECTING'; msgs.push({ text: 'Kya badalna hai? Item ka brand badalne ke liye item chunein, ya naya quantity likhiye (jaise "atta 2 kg").', keyboard: kb([s.items.map(it => [`${cap(it.product)} brand`, `editbrand:${it.sku}`]), [['✅ Kuch nahi, summary dikhao', 'review']]]) }); }
+    else if (data.startsWith('editbrand:')) { const it = s.items.find(i => i.sku === data.slice(10)); if (it) { const opts = brandsFor(catalog, it.product); msgs.push({ text: `${cap(it.product)} ke brand options (demo catalog):`, keyboard: kb(opts.map(r => [[`${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`, `brand:${it.sku}:${r.sku}`]])) }); } else collectOrReview(s, cfg, now, msgs); }
+    else if (data === 'review') { collectOrReview(s, cfg, now, msgs); }
     else if (data === 'cancel') { store.sessions[cid] = newSession(cid); msgs.push({ text: '❌ Order cancel kar diya. Naya order ke liye voice note ya text bhejein.', keyboard: null }); }
     else if (data.startsWith('date:')) { s.delivery.date = data.slice(5); collectOrReview(s, cfg, now, msgs); }
     else if (data.startsWith('slot:')) { s.delivery.slot = data.slice(5); collectOrReview(s, cfg, now, msgs); }
     else if (data.startsWith('area:')) { s.customer.area = data.slice(5); collectOrReview(s, cfg, now, msgs); }
-    else if (data.startsWith('qty:')) { const [, p, q, u] = data.split(':'); const it = s.items.find(i => i.product === p); if (it) { const row = defaultSku(catalog, p); Object.assign(it, lineFor(row, +q)); if (u) it.unit = u; } collectOrReview(s, cfg, now, msgs); }
+    else if (data.startsWith('brand:')) { const [, from, to] = data.split(':'); const idx = s.items.findIndex(i => i.sku === from); const row = catalog.find(r => r.sku === to); if (idx >= 0 && row && s.items[idx].qty !== null) { const old = s.items[idx]; s.items[idx] = { ...lineFor(row, old.qty), brand_chosen: true }; msgs.push({ text: `✔️ ${cap(old.product)}: ${row.brand} ${row.variant}`, keyboard: null }); } collectOrReview(s, cfg, now, msgs); }
+    else if (data.startsWith('brandany:')) { const it = s.items.find(i => i.sku === data.slice(9)); if (it) it.brand_chosen = true; collectOrReview(s, cfg, now, msgs); }
+    else if (data.startsWith('qty:')) { const [, p, q, u] = data.split(':'); const it = s.items.find(i => i.product === p); if (it) { const row = catalog.find(r => r.sku === it.sku) || defaultSku(catalog, p); Object.assign(it, lineFor(row, +q)); if (u) it.unit = u; } collectOrReview(s, cfg, now, msgs); }
     else if (data === 'ok') { msgs.push({ text: '👍 Shukriya! Order dispatch ke liye taiyaar hai.', keyboard: null }); }
     else if (data === 'swap') { if (!swapOpen()) { if (s.state === 'SWAP_WINDOW') expired(); else msgs.push({ text: 'Abhi koi confirmed order nahi hai.', keyboard: null }); } else msgs.push({ text: 'Kaunsa item badalna hai?', keyboard: kb([s.items.map(it => [cap(it.product), `swapitem:${it.sku}`])]) }); }
     else if (data.startsWith('swapitem:')) { if (!swapOpen()) expired(); else { const it = s.items.find(i => i.sku === data.slice(9)); const opts = brandsFor(catalog, it.product); msgs.push({ text: `${cap(it.product)} ke brand options (demo catalog):`, keyboard: kb(opts.map(r => [[`${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`, `swapto:${it.sku}:${r.sku}`]])) }); } }
@@ -194,6 +223,25 @@ function brain(update, store, cfg, now) {
   if (s.state === 'REVIEW' && /^(haan|han|ha|yes|ok|confirm|theek|thik)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'confirm' }, store, cfg, now);
   if (s.state === 'REVIEW' && /^(nahi|no|cancel)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'cancel' }, store, cfg, now);
 
+  // brand change typed as text (works before confirm, and inside the 60 s window after confirm)
+  if (s.items.length && ['COLLECTING', 'REVIEW', 'SWAP_WINDOW', 'SWAP_PENDING'].includes(s.state)) {
+    const rows = brandRowsInText(text, catalog);
+    const target = rows.map(r => [r, s.items.find(it => it.product === r.product && it.sku !== r.sku)]).find(([, it]) => it);
+    if (target) {
+      const [row, old] = target;
+      if (s.state === 'SWAP_WINDOW' || s.state === 'SWAP_PENDING') return brain({ ...update, text: '', callback_data: `swapto:${old.sku}:${row.sku}` }, store, cfg, now);
+      const nu = { ...lineFor(row, old.qty), brand_chosen: true }; s.items[s.items.findIndex(i => i.sku === old.sku)] = nu;
+      msgs.push({ text: `🔁 ${cap(old.product)}: ${old.brand} → ${nu.brand} ${nu.variant} (${money(nu.unit_price)}/${nu.unit})`, keyboard: null });
+      collectOrReview(s, cfg, now, msgs); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s };
+    }
+    const it = brandIntent(text, s);
+    if (it) {
+      if (s.state === 'SWAP_WINDOW' || s.state === 'SWAP_PENDING') return brain({ ...update, text: '', callback_data: `swapitem:${it.sku}` }, store, cfg, now);
+      const opts = brandsFor(catalog, it.product);
+      msgs.push({ text: `${cap(it.product)} ke brand options (demo catalog):`, keyboard: kb(opts.map(r => [[`${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`, `brand:${it.sku}:${r.sku}`]])) });
+      return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s };
+    }
+  }
   // question?
   const q = answerQuestion(text, s, catalog, cfg, now);
   const ex = extract(text, now);
@@ -213,9 +261,11 @@ function brain(update, store, cfg, now) {
     if (row.unit === 'pcs' && qty === null) qty = 1;
     if (row.unit === 'pcs') unit = 'pcs';
     const line = qty === null ? { sku: row.sku, product: row.product, brand: row.brand, variant: row.variant, qty: null, unit: row.unit, unit_price: row.unit_price_inr, line_total: 0 } : lineFor(row, qty);
+    line.brand_chosen = brandsFor(catalog, it.product).length <= 1; // one brand only -> nothing to ask
     const existing = s.items.findIndex(x => x.product === it.product);
     if (existing >= 0) s.items[existing] = line; else s.items.push(line);
   }
+  for (const row of brandRowsInText(text, catalog)) { const idx = s.items.findIndex(i => i.product === row.product); if (idx >= 0 && s.items[idx].qty !== null) s.items[idx] = { ...lineFor(row, s.items[idx].qty), brand_chosen: true }; }
   if (ex.date) s.delivery.date = ex.date; if (ex.slot) s.delivery.slot = ex.slot;
   msgs.push({ text: understood(s, now) + (ex.unknown_terms.length ? `\n(Samajh nahi aaya: ${esc(ex.unknown_terms.slice(0, 5).join(', '))})` : ''), keyboard: null });
   collectOrReview(s, cfg, now, msgs);
