@@ -14,7 +14,7 @@ const OPENROUTER = { openRouterApi: { id: '3UvcSxPc55DLZzwJ', name: 'klickbae8yt
 
 const code = {
   normalize: `// One update in (message or callback_query) -> one flat item out
-const u = $input.first().json;
+const u = $('Telegram Trigger').first().json; // Config replaced the item fields, so read the raw update
 const cb = u.callback_query, m = u.message || (cb && cb.message);
 const chat_id = String((cb ? cb.message.chat.id : m.chat.id));
 return [{ json: {
