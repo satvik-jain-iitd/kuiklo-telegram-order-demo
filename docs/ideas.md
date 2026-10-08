@@ -22,3 +22,5 @@ SecondBrain ids are not assigned yet (open); add them when `idea.py` is run.
 | 2026-10-08 | - | Live inventory, real payments, real dispatch, database server | dropped for the demo (SPEC out of scope) |
 | 2026-10-08 | - | SUB workflows | dropped for the demo (ADR-003) |
 | 2026-10-08 | - | Render or Railway free hosting | dropped (ADR-011) |
+| 2026-10-08 | ID036 | Tell the build as LinkedIn stories, with the real links and the product-sense moments (story bank lives in the owner's private vault) | open |
+| 2026-10-08 | - | One-page metrics intake sheet for the founder, filled after the demo, to size the real app | open |
