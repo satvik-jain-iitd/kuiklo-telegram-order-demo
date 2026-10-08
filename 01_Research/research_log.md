@@ -28,3 +28,22 @@ Decision: No competitor or product data yet. Need the exact name, website, city,
 
 The earlier rows about "Quiklo" (student lending) are a different company. Marked outdated.
 Demo catalog in `n8n/catalog.csv` uses the site's categories (vegetables, dairy, staples, bakery). Prices are mock.
+
+## Sarvam AI (voice for P7), checked 2026-10-08
+
+| Claim | Evidence | Tier | Confidence | What it changes |
+|---|---|---|---|---|
+| Every new user gets ₹100 free credits | docs.sarvam.ai pricing page: "Every new user receives ₹100 in credits" | A (vendor) | 0.9 | Budget = ₹100 |
+| Credits never expire | pricing page | A (vendor) | 0.8 | No rush |
+| Voice Cloning generation costs ₹30 per 10K characters (₹3 per 1K) | pricing page | A (vendor) | 0.9 | ₹100 = about 33,000 characters |
+| Bulbul v3 TTS also ₹30 per 10K characters | pricing page | A (vendor) | 0.9 | Same budget either way |
+| Cloned voice is used via `POST /voices/clone` with form field `voice_id=svc-...`, `text`, `language_code` | voice cloning overview | A (vendor) | 0.9 | Integration shape |
+| `text` max 1000 characters per request | voice cloning overview | A (vendor) | 0.9 | Cap messages |
+| "Only clone a voice you have the right to use" | voice cloning overview | A (vendor) | 0.9 | G1 consent stays a gate |
+| Key works: stock Bulbul v3, 36 chars, opus, http 200 | our own test call (no clone used) | S | 0.9 | API path proven |
+
+Budget plan (free tier only):
+- Voice replies only for the short follow-up questions (name, slot, area), about 40 to 80 characters each. Not for the order summary.
+- Cap: `voice_max_chars` 150 per message, `voice_daily_cap` 100 messages per day, counter in workflow static data. Over cap = text only.
+- At 80 chars per reply, ₹100 = about 400 voice replies. At 100 per day cap, 4 days of heavy demo use.
+- Text fallback always. Voice reply only after Shyam Gupta's written consent is in `docs/consent/`.
