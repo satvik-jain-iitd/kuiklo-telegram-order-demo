@@ -3,7 +3,7 @@
 kb_load(path)        -> reads docs/kb/kuiklo_kb.md into chunks, embeds with all-MiniLM-L6-v2
 kb_answer(question)  -> {"answer", "sources", "score", "model"}
 
-Retrieval: cosine top-k over MiniLM embeddings. Generation: Ollama (gemma3:1b by default)
+Retrieval: cosine top-k over MiniLM embeddings. Generation: Ollama (gemma3:4b by default)
 with the top chunks as context, Hinglish reply. If Ollama fails, the best chunk's answer is
 returned as is, so the bot never goes silent.
 """
@@ -17,7 +17,7 @@ from sentence_transformers import SentenceTransformer
 
 EMBED_MODEL = os.environ.get("KB_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
-LLM_MODEL = os.environ.get("KB_LLM_MODEL", "gemma3:1b")  # 4b took 24-45 s/question on 4 CPU; 1b is faster
+LLM_MODEL = os.environ.get("KB_LLM_MODEL", "gemma3:4b")  # owner choice 2026-10-08: quality over speed (24-45 s/answer on 4 CPU)
 TOP_K = 3
 MIN_SCORE = 0.30  # below this the question is probably not about Kuiklo
 
