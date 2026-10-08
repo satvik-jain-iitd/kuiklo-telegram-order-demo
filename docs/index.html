@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuiklo Voice Order Assistant</title>
+<meta name="description" content="Unofficial demo built for Kuiklo: a customer sends a voice note on Telegram, the bot takes the order, confirms every charge, and replies in the founder's voice.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/favicon.jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --navy:#0D1B3E; --lime:#AADF00; --green:#22c55e; --gold:#e3b166; --gold-d:#c98f3d; --coral:#d9502f;
+  --bg:#ffffff; --bg-soft:#f8fafc; --bg-mute:#f1f5f9; --line:#e2e8f0; --text:#111827; --text-2:#475569;
+  --card:#ffffff; --hero:#0D1B3E; --hero-text:#ffffff;
+  --tg-bg:#0e1621; --tg-head:#17212b; --tg-in:#182533; --tg-out:#2b5278; --tg-text:#f5f5f5; --tg-mute:#8a9aa9; --tg-btn:rgba(255,255,255,.12);
+  --radius:14px; --max:1080px;
+}
+:root[data-theme="dark"]{
+  --bg:#0b1324; --bg-soft:#0f1a30; --bg-mute:#15213a; --line:#243252; --text:#e8edf6; --text-2:#a3b0c6; --card:#101b33;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+img{max-width:100%;height:auto;display:block}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 16px}
+h1,h2,h3{line-height:1.2;margin:0 0 .4em;letter-spacing:-.01em}
+h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800}
+h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:700}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0 0 1em}
+.muted{color:var(--text-2)}
+.small{font-size:.9rem}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{background:var(--bg-mute);padding:.1em .4em;border-radius:6px;font-size:.9em}
+section{padding:64px 0}
+section+section{border-top:1px solid var(--line)}
+.eyebrow{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-d);margin-bottom:10px}
+.lead{font-size:1.1rem;max-width:62ch}
+
+/* nav */
+nav{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+nav .brand{display:flex;align-items:center;gap:10px;font-weight:700;text-decoration:none}
+nav .brand img{height:30px;width:auto}
+nav .badge{font-size:.72rem;font-weight:600;background:var(--bg-mute);color:var(--text-2);padding:3px 8px;border-radius:999px;white-space:nowrap}
+nav .links{display:none;gap:18px;font-size:.92rem}
+nav .links a{text-decoration:none;color:var(--text-2)}
+nav .links a:hover{color:var(--text)}
+@media(min-width:860px){nav .links{display:flex}}
+
+/* hero */
+.hero{background:var(--hero);color:var(--hero-text);padding:72px 0 80px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:var(--lime);opacity:.12;pointer-events:none}
+.hero .logo-card{display:inline-block;background:#fff;border-radius:12px;padding:10px 16px;margin-bottom:28px}
+.hero .logo-card img{height:44px;width:auto}
+.hero h1 span{color:var(--lime)}
+.hero p{font-size:1.15rem;max-width:60ch;color:#d6dcea}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:10px;font-weight:600;text-decoration:none;border:2px solid transparent;transition:transform .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn-lime{background:var(--lime);color:var(--navy)}
+.btn-ghost{border-color:rgba(255,255,255,.35);color:#fff}
+.btn svg{width:18px;height:18px}
+.hero .facts{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:34px;font-size:.9rem;color:#b9c3d8}
+.hero .facts b{color:#fff;font-weight:600}
+
+/* phone mock */
+.demo{display:grid;gap:32px;align-items:start}
+@media(min-width:900px){.demo{grid-template-columns:1fr 400px}}
+.phone{background:var(--tg-bg);border-radius:30px;padding:12px;box-shadow:0 20px 60px rgba(13,27,62,.25);max-width:400px;margin:0 auto;width:100%}
+.phone .head{background:var(--tg-head);color:#fff;border-radius:18px 18px 0 0;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.phone .head .av{width:36px;height:36px;border-radius:50%;background:var(--lime);color:var(--navy);display:grid;place-items:center;font-weight:800;font-size:.9rem}
+.phone .head .nm{font-weight:600;font-size:.95rem;line-height:1.2}
+.phone .head .st{font-size:.75rem;color:var(--tg-mute)}
+.chat{background:var(--tg-bg);padding:12px 8px 16px;display:flex;flex-direction:column;gap:8px;font-size:.86rem;line-height:1.45;color:var(--tg-text);border-radius:0 0 18px 18px;max-height:820px;overflow-y:auto}
+.msg{max-width:88%;padding:8px 11px;border-radius:14px;word-break:break-word}
+.msg .tx{white-space:pre-wrap}
+.in{background:var(--tg-in);align-self:flex-start;border-bottom-left-radius:4px}
+.out{background:var(--tg-out);align-self:flex-end;border-bottom-right-radius:4px}
+.msg .t{display:block;text-align:right;font-size:.68rem;color:var(--tg-mute);margin-top:2px}
+.msg b{font-weight:600}
+.msg pre{margin:6px 0;padding:8px;background:rgba(0,0,0,.25);border-radius:8px;font-size:.74rem;line-height:1.35;overflow-x:auto;white-space:pre}
+.sys{align-self:center;background:rgba(0,0,0,.35);color:#cfd8e3;font-size:.72rem;padding:4px 12px;border-radius:999px}
+.kb{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.kb .row{display:flex;gap:5px}
+.kb span{flex:1;background:var(--tg-btn);color:#fff;text-align:center;padding:7px 6px;border-radius:8px;font-size:.78rem;line-height:1.25}
+.kb span.tap{outline:2px solid var(--lime);color:var(--lime);font-weight:600}
+.voice{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.voice .play{width:36px;height:36px;border-radius:50%;background:var(--lime);display:grid;place-items:center;flex:none}
+.voice .play svg{width:16px;height:16px;fill:var(--navy);margin-left:2px}
+.voice .wave{display:flex;align-items:center;gap:2px;height:26px;flex:1}
+.voice .wave i{display:block;width:3px;border-radius:2px;background:#9fb3c8}
+.out .voice .play{background:#fff}.out .voice .wave i{background:#bcd3ea}
+.voice .dur{font-size:.72rem;color:var(--tg-mute)}
+.ai{font-size:.78rem;color:#ffd58a}
+.said{font-size:.78rem;color:var(--tg-mute);font-style:italic;border-left:2px solid var(--lime);padding-left:8px;margin:6px 0}
+.steps{counter-reset:s;display:grid;gap:14px}
+.steps div{position:relative;padding-left:46px}
+.steps div::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:var(--navy);color:var(--lime);font-weight:700;display:grid;place-items:center;font-size:.9rem}
+.steps b{display:block;margin-bottom:2px}
+
+/* architecture */
+.diagram{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg-soft);padding:12px}
+.diagram svg{display:block;min-width:860px;width:100%;height:auto;font-family:inherit}
+.diagram .box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+.diagram .navy{fill:var(--navy)}
+.diagram .lime{fill:var(--lime)}
+.diagram .node{fill:var(--bg-mute);stroke:var(--line)}
+.diagram text{fill:var(--text);font-size:13px}
+.diagram .h{font-weight:700;font-size:14px}
+.diagram .w{fill:#fff}
+.diagram .m{fill:var(--text-2);font-size:11.5px}
+.diagram .l{fill:var(--navy);font-weight:600}
+.diagram .arrow{stroke:var(--text-2);stroke-width:1.6;fill:none;marker-end:url(#ah)}
+.diagram .dash{stroke-dasharray:5 4}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:12px;font-size:.88rem;color:var(--text-2)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+
+/* cards, lists, tiles */
+.grid{display:grid;gap:16px}
+@media(min-width:700px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
+.check{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.check li{display:flex;gap:12px;align-items:flex-start}
+.check li svg{width:22px;height:22px;flex:none;margin-top:2px}
+.tiles{display:grid;gap:14px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:760px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;border-top:4px solid var(--lime)}
+.tile .n{font-size:1.8rem;font-weight:800;color:var(--navy);line-height:1.1;letter-spacing:-.02em}
+:root[data-theme="dark"] .tile .n,:root[data-theme="dark"] .diagram .l{color:var(--lime);fill:var(--lime)}
+.tile .u{font-size:.82rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.tile .s{font-size:.88rem;color:var(--text-2);margin-top:8px;line-height:1.45}
+.qa{display:grid;gap:14px}
+.qa .q{font-weight:600;color:var(--navy)}
+.qa .a{color:var(--text-2);font-size:.95rem}
+:root[data-theme="dark"] .qa .q{color:var(--lime)}
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.tag{font-size:.8rem;background:var(--bg-mute);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--text-2)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);background:var(--bg-soft)}
+td.r,th.r{text-align:right}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius)}
+.next{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.next li{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+.next li i{flex:none;width:28px;height:28px;border-radius:8px;background:var(--navy);color:var(--lime);display:grid;place-items:center;font-style:normal;font-weight:700;font-size:.85rem}
+footer{background:var(--navy);color:#c3cce0;padding:40px 0;font-size:.92rem}
+footer a{color:#fff}
+footer .row{display:flex;flex-wrap:wrap;gap:12px 24px;margin-top:14px}
+.note{background:var(--bg-mute);border-left:4px solid var(--gold);padding:12px 16px;border-radius:8px;font-size:.92rem}
+.warn{border-left-color:var(--coral)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/logo.png" alt="Kuiklo logo"><span class="badge">Unofficial demo</span></a>
+    <div class="links">
+      <a href="#chat">Chat</a><a href="#how">How it works</a><a href="#rules">Rules</a><a href="#numbers">Numbers</a><a href="#faq">FAQ bot</a><a href="#catalog">Catalog</a><a href="#next">Next</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="logo-card"><img src="assets/logo.png" alt="Kuiklo"></div>
+    <h1>Voice Order <span>Assistant</span></h1>
+    <p>A customer sends a voice note on Telegram (WhatsApp later). The bot takes the order, confirms every charge before the customer taps Confirm, and replies in the founder's voice.</p>
+    <div class="btns">
+      <a class="btn btn-lime" href="https://t.me/Kuicklobot" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.04 15.5l-.37 5.25c.53 0 .76-.23 1.04-.5l2.5-2.4 5.18 3.8c.95.52 1.63.25 1.88-.88l3.4-15.95c.31-1.4-.5-1.95-1.43-1.6L1.66 10.9c-1.37.53-1.35 1.3-.23 1.64l5.1 1.6L18.4 6.7c.56-.37 1.07-.17.65.2L9.04 15.5z"/></svg>
+        Try the demo bot: t.me/Kuicklobot</a>
+      <a class="btn btn-ghost" href="https://github.com/satvik-jain-iitd/kuiklo-telegram-order-demo" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.3 9.4 7.86 10.92.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 015.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        View the code on GitHub</a>
+    </div>
+    <div class="facts">
+      <span><b>Built for</b> Kuiklo, Patna</span>
+      <span><b>Channel</b> Telegram bot @Kuicklobot</span>
+      <span><b>Language</b> Hinglish in, Hinglish out</span>
+      <span><b>Prices</b> demo values, labeled</span>
+    </div>
+  </div>
+</header>
+
+<section id="chat">
+  <div class="wrap">
+    <span class="eyebrow">What the customer sees</span>
+    <h2>One voice note. One clear order.</h2>
+    <p class="lead muted">Every message below is the real bot text. Buttons replace typing wherever a tap works. Prices come from the demo catalog.</p>
+    <div class="demo">
+      <div class="steps">
+        <div><b>Greeting in the founder's voice</b><span class="muted">On <code>/start</code> the bot sends a voice note. It is cloned from Shyam Gupta's voice with Sarvam. Every voice message carries the AI label in its caption.</span></div>
+        <div><b>Customer speaks, bot reads it back</b><span class="muted">The Hinglish voice note goes to a local STT server on the same box. The bot lists what it understood before it asks anything.</span></div>
+        <div><b>Short follow-up questions, voiced</b><span class="muted">Brand, delivery slot, name, phone and area. Each question is one voice note with buttons. Rules extract the order first; a DeepSeek call is the fallback when rules find nothing.</span></div>
+        <div><b>Full breakdown before Confirm</b><span class="muted">Items, delivery fee, handling fee, total, payment mode, delivery promise, masked phone. No charge can appear later that is not on this screen.</span></div>
+        <div><b>60-second change window</b><span class="muted">After Confirm the bot shows a clock and a change button. A brand swap shows before and after, line by line. After 60 seconds the button is refused.</span></div>
+      </div>
+
+      <div class="phone" aria-label="Telegram chat mock">
+        <div class="head"><div class="av">K</div><div><div class="nm">Kuicklobot</div><div class="st">bot</div></div></div>
+        <div class="chat">
+          <div class="sys">Today</div>
+          <div class="msg out"><div class="tx">/start<span class="t">09:30</span></div></div>
+          <div class="msg in">
+            <div class="voice"><div class="play"><svg viewBox="0 0 16 16"><path d="M3 2l11 6-11 6z"/></svg></div><div class="wave"><i style="height:8px"></i><i style="height:14px"></i><i style="height:22px"></i><i style="height:16px"></i><i style="height:24px"></i><i style="height:12px"></i><i style="height:20px"></i><i style="height:9px"></i><i style="height:18px"></i><i style="height:24px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:20px"></i><i style="height:12px"></i><i style="height:17px"></i><i style="height:7px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:10px"></i><i style="height:6px"></i></div><span class="dur">0:08</span></div>
+            <div class="said">नमस्ते। क्विकलो यूज़ करने के लिए थैंक यू। मैं फ़ाउंडर एंड सीईओ श्याम गुप्ता। बताइए, आपकी कैसे मदद कर सकता हूँ?</div>
+            <div class="tx"><span class="ai">🎙️ AI-generated voice (Shyam Gupta ki awaaz).</span>
+👋 क्विकलो डेमो बॉट में स्वागत है!
+
+वॉइस नोट या टेक्स्ट भेजिए, जैसे:
+"1 kg atta, 2 roti, 3 kg bhindi, kal subah"
+
+⚠️ यह डेमो है। दाम डेमो वैल्यू हैं।<span class="t">09:30</span></div>
+          </div>
+
+          <div class="msg out">
+            <div class="voice"><div class="play"><svg viewBox="0 0 16 16"><path d="M3 2l11 6-11 6z"/></svg></div><div class="wave"><i style="height:10px"></i><i style="height:18px"></i><i style="height:24px"></i><i style="height:12px"></i><i style="height:20px"></i><i style="height:8px"></i><i style="height:16px"></i><i style="height:22px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:18px"></i><i style="height:24px"></i><i style="height:10px"></i><i style="height:16px"></i><i style="height:8px"></i><i style="height:20px"></i><i style="height:12px"></i><i style="height:7px"></i></div><span class="dur">0:06</span></div>
+            <div class="said" style="border-color:#bcd3ea">Customer, Hinglish: "ek kilo atta, do roti, teen kilo bhindi, kal"</div>
+            <div class="tx"><span class="t">09:31</span></div>
+          </div>
+
+          <div class="msg in"><div class="tx">Maine yeh samjha:
+• Atta 1 kg
+• Roti 2 pcs
+• Bhindi 3 kg
+📅 Delivery: kal (9 Oct)<span class="t">09:31</span></div></div>
+
+          <div class="msg in">
+            <div class="voice"><div class="play"><svg viewBox="0 0 16 16"><path d="M3 2l11 6-11 6z"/></svg></div><div class="wave"><i style="height:8px"></i><i style="height:16px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:9px"></i><i style="height:14px"></i><i style="height:20px"></i><i style="height:7px"></i><i style="height:12px"></i></div><span class="dur">0:03</span></div>
+            <div class="said">आटा कौनसा ब्रांड चाहिए?</div>
+            <div class="tx"><span class="ai">🎙️ AI-generated voice (Shyam Gupta ki awaaz).</span>
+Atta kaunsa brand chahiye?</div>
+            <div class="kb"><div class="row"><span class="tap">Aashirvaad Select Sharbati ₹48/kg ✓</span></div><div class="row"><span>Pillsbury Chakki Fresh ₹52/kg</span></div><div class="row"><span>Fortune Chakki Fresh ₹50/kg</span></div><div class="row"><span>Patanjali Whole Wheat ₹44/kg</span></div><div class="row"><span>Koi bhi chalega</span></div></div>
+            <div class="tx"><span class="t">09:31</span></div>
+          </div>
+
+          <div class="msg in">
+            <div class="voice"><div class="play"><svg viewBox="0 0 16 16"><path d="M3 2l11 6-11 6z"/></svg></div><div class="wave"><i style="height:10px"></i><i style="height:18px"></i><i style="height:12px"></i><i style="height:22px"></i><i style="height:8px"></i><i style="height:16px"></i><i style="height:20px"></i><i style="height:9px"></i><i style="height:14px"></i><i style="height:6px"></i></div><span class="dur">0:03</span></div>
+            <div class="said">डिलीवरी का स्लॉट क्या रखें, सुबह या शाम?</div>
+            <div class="tx"><span class="ai">🎙️ AI-generated voice (Shyam Gupta ki awaaz).</span>
+Ek detail chahiye: Delivery slot kya rakhein?</div>
+            <div class="kb"><div class="row"><span class="tap">Morning ✓</span><span>Evening</span></div></div>
+            <div class="tx"><span class="t">09:32</span></div>
+          </div>
+
+          <div class="sys">3 aur sawal, voice mein: naam, phone, area</div>
+
+          <div class="msg in"><div class="tx">🧾 <b>Order Summary</b>
+<pre>Item              Qty     Price
+Atta              1 kg    ₹48
+Roti              2 pcs   ₹20
+Bhindi            3 kg    ₹120
+--------------------------------
+Items subtotal            ₹188
+Delivery fee (demo)        ₹25
+Handling fee (demo)         ₹5
+--------------------------------
+TOTAL                     ₹218</pre>📦 Delivery: kal, morning slot
+💳 Payment: COD (cash on delivery)
+🏠 Area: Kankarbagh
+👤 Naam: Ramesh | 📱 98xxxxxx10
+
+Prices and fees are demo values. Order confirm karne se pehle sab kuch dekh lijiye.</div>
+            <div class="kb"><div class="row"><span class="tap">✅ Confirm order ✓</span><span>✏️ Kuch badalna hai</span></div><div class="row"><span>❌ Cancel</span></div></div>
+            <div class="tx"><span class="t">09:33</span></div>
+          </div>
+
+          <div class="msg in"><div class="tx">✅ Aapka order process ho raha hai.
+Order ID: ORD-20261008-0001
+
+⏱️ Ek minute ke andar koi change ho to abhi bata sakte hain.</div>
+            <div class="kb"><div class="row"><span class="tap">🔄 Order change karna hai ✓</span><span>👍 Sab theek hai</span></div></div>
+            <div class="tx"><span class="t">09:33</span></div>
+          </div>
+
+          <div class="msg in"><div class="tx">Kaunsa item badalna hai?</div>
+            <div class="kb"><div class="row"><span class="tap">Atta ✓</span><span>Roti</span><span>Bhindi</span></div></div>
+            <div class="tx"><span class="t">09:33</span></div>
+          </div>
+
+          <div class="msg in"><div class="tx">Atta ke brand options (demo catalog):</div>
+            <div class="kb"><div class="row"><span>Aashirvaad Select Sharbati ₹48/kg</span></div><div class="row"><span class="tap">Pillsbury Chakki Fresh ₹52/kg ✓</span></div><div class="row"><span>Fortune Chakki Fresh ₹50/kg</span></div><div class="row"><span>Patanjali Whole Wheat ₹44/kg</span></div></div>
+            <div class="tx"><span class="t">09:34</span></div>
+          </div>
+
+          <div class="msg in"><div class="tx">🔁 <b>Change summary</b>
+Atta: Aashirvaad 1 kg ₹48 → Pillsbury 1 kg ₹52 (+₹4)
+Items subtotal: ₹188 → ₹192
+Delivery and handling fees: unchanged
+TOTAL: ₹218 → ₹222</div>
+            <div class="kb"><div class="row"><span class="tap">✅ Change confirm karein ✓</span><span>❌ Purana order rakhein</span></div></div>
+            <div class="tx"><span class="t">09:34</span></div>
+          </div>
+
+          <div class="msg in"><div class="tx">✅ Aapke order mein change kar diya gaya hai. Updated order dispatch ho gaya.
+Naya total: ₹222<span class="t">09:34</span></div></div>
+
+          <div class="sys">After 60 seconds</div>
+          <div class="msg in"><div class="tx">⏱️ Change ka time nikal gaya. Order change ke liye Kuiklo support se contact karein.<span class="t">09:35</span></div></div>
+        </div>
+      </div>
+      <p class="small muted" style="grid-column:1/-1;margin:0;text-align:center">Scroll inside the phone to see the whole flow, including the 60-second change window.</p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <span class="eyebrow">How it works</span>
+    <h2>One n8n workflow, three local services, one box.</h2>
+    <p class="lead muted">Telegram calls a 21-node n8n workflow on an Oracle Cloud box. Speech-to-text, the FAQ bot and the voice service run on the same box. Nothing leaves it except Telegram, the Sarvam voice call, and the DeepSeek fallback for hard-to-parse orders.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 960 560" role="img" aria-labelledby="dt">
+        <title id="dt">Architecture: Telegram to n8n on Oracle Cloud to local STT, FAQ and voice services</title>
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5 0 10z" fill="#475569"/></marker></defs>
+
+        <!-- Telegram -->
+        <rect class="box" x="20" y="200" width="150" height="110" rx="14"/>
+        <circle cx="95" cy="238" r="20" class="navy"/>
+        <path d="M86 238.5l4.5 1.8 2 5.8c.2.6.9.8 1.4.4l2.6-2.1 4.6 3.4c.6.4 1.4.1 1.6-.6l3-13.5c.2-.9-.6-1.6-1.4-1.3L86 236.6c-.9.3-.9 1.6 0 1.9z" fill="#fff"/>
+        <text x="95" y="280" text-anchor="middle" class="h">Telegram</text>
+        <text x="95" y="297" text-anchor="middle" class="m">customer, @Kuicklobot</text>
+
+        <!-- Oracle box -->
+        <rect class="box" x="210" y="20" width="730" height="520" rx="18" stroke-dasharray="6 5"/>
+        <text x="232" y="48" class="h">Oracle Cloud box (aarch64, 4 CPU, no GPU)</text>
+        <text x="232" y="66" class="m">n8n.linkright.in and the local services share one machine</text>
+
+        <!-- n8n workflow -->
+        <rect class="box" x="232" y="84" width="690" height="236" rx="14"/>
+        <rect x="232" y="84" width="690" height="34" rx="14" class="navy"/>
+        <rect x="232" y="104" width="690" height="14" class="navy"/>
+        <text x="250" y="107" class="h w">n8n workflow: Kuiklo MAIN 01 Telegram Order Bot (21 nodes)</text>
+
+        <!-- row 1 -->
+        <g font-size="12">
+          <rect class="node" x="250" y="134" width="88" height="34" rx="8"/><text x="294" y="156" text-anchor="middle">Trigger</text>
+          <rect class="node" x="350" y="134" width="76" height="34" rx="8"/><text x="388" y="156" text-anchor="middle">Config</text>
+          <rect class="node" x="438" y="134" width="90" height="34" rx="8"/><text x="483" y="156" text-anchor="middle">Kill switch?</text>
+          <rect class="node" x="540" y="134" width="90" height="34" rx="8"/><text x="585" y="156" text-anchor="middle">Normalize</text>
+          <rect class="node" x="642" y="134" width="66" height="34" rx="8"/><text x="675" y="156" text-anchor="middle">Voice?</text>
+          <rect class="node" x="720" y="134" width="80" height="34" rx="8"/><text x="760" y="156" text-anchor="middle">get file</text>
+          <rect class="node" x="812" y="134" width="96" height="34" rx="8" stroke="#AADF00" stroke-width="2"/><text x="860" y="156" text-anchor="middle">STT</text>
+          <!-- row 2 -->
+          <rect class="node" x="250" y="196" width="110" height="34" rx="8"/><text x="305" y="218" text-anchor="middle">Extract (rules)</text>
+          <rect class="node" x="372" y="196" width="128" height="34" rx="8" stroke="#c98f3d" stroke-width="2"/><text x="436" y="218" text-anchor="middle">DeepSeek fallback</text>
+          <rect class="node" x="512" y="196" width="96" height="34" rx="8"/><text x="560" y="218" text-anchor="middle">Order brain</text>
+          <rect class="node" x="620" y="196" width="66" height="34" rx="8"/><text x="653" y="218" text-anchor="middle">FAQ?</text>
+          <rect class="node" x="698" y="196" width="60" height="34" rx="8" stroke="#AADF00" stroke-width="2"/><text x="728" y="218" text-anchor="middle">KB</text>
+          <rect class="node" x="770" y="196" width="138" height="34" rx="8"/><text x="839" y="218" text-anchor="middle">Voice reply?</text>
+          <!-- row 3 -->
+          <rect class="node" x="250" y="258" width="130" height="34" rx="8" stroke="#AADF00" stroke-width="2"/><text x="315" y="280" text-anchor="middle">Sarvam voice</text>
+          <rect class="node" x="392" y="258" width="130" height="34" rx="8"/><text x="457" y="280" text-anchor="middle">Telegram: send</text>
+          <text x="540" y="280" class="m">state: sessions and orders in n8n static data, phone masked</text>
+        </g>
+        <!-- in-workflow arrows -->
+        <path class="arrow" d="M338 151h12M426 151h12M528 151h12M630 151h12M708 151h12M800 151h12"/>
+        <path class="arrow" d="M860 168v10q0 8-8 8H313q-8 0-8 8v2"/>
+        <path class="arrow" d="M360 213h12M500 213h12M608 213h12M686 213h12M758 213h12"/>
+        <path class="arrow" d="M839 230v10q0 8-8 8H323q-8 0-8 8v2"/>
+        <path class="arrow" d="M380 275h12"/>
+
+        <!-- local services -->
+        <g>
+          <rect class="box" x="232" y="344" width="218" height="176" rx="14"/>
+          <rect x="232" y="344" width="218" height="6" rx="3" class="lime"/>
+          <text x="248" y="374" class="h">bhavna.ai STT</text>
+          <text x="248" y="394" class="m">Apex Hinglish whisper fine-tune</text>
+          <text x="248" y="410" class="m">CTranslate2 int8 via faster-whisper</text>
+          <text x="248" y="426" class="m">POST /transcribe, OGG in, text out</text>
+          <text x="248" y="442" class="m">127.0.0.1:8787, pm2 bhavna-stt</text>
+          <text x="248" y="470" class="l">~0.45x real time on CPU</text>
+
+          <rect class="box" x="468" y="344" width="218" height="176" rx="14"/>
+          <rect x="468" y="344" width="218" height="6" rx="3" class="lime"/>
+          <text x="484" y="374" class="h">FAQ bot</text>
+          <text x="484" y="394" class="m">all-MiniLM-L6-v2 retrieval, top 3</text>
+          <text x="484" y="410" class="m">gemma3:4b on Ollama writes the reply</text>
+          <text x="484" y="426" class="m">31 Q&amp;A from kuiklo.com pages</text>
+          <text x="484" y="442" class="m">POST /ask, off-topic guard at 0.30</text>
+          <text x="484" y="470" class="l">answers in Hinglish, 24 to 45 s</text>
+
+          <rect class="box" x="704" y="344" width="218" height="176" rx="14"/>
+          <rect x="704" y="344" width="218" height="6" rx="3" class="lime"/>
+          <text x="720" y="374" class="h">Voice service</text>
+          <text x="720" y="394" class="m">Sarvam voice clone, hi-IN</text>
+          <text x="720" y="410" class="m">Devanagari text only (T-31)</text>
+          <text x="720" y="426" class="m">cached by text hash, 200 chars max</text>
+          <text x="720" y="442" class="m">100 voice messages per day cap</text>
+          <text x="720" y="470" class="l">AI label on every caption</text>
+        </g>
+        <!-- service arrows: workflow box bottom to each local service -->
+        <path class="arrow dash" d="M341 320v22"/><text x="350" y="336" class="m">STT node</text>
+        <path class="arrow dash" d="M577 320v22"/><text x="586" y="336" class="m">KB node</text>
+        <path class="arrow dash" d="M813 320v22"/><text x="822" y="336" class="m">Sarvam voice node</text>
+
+        <!-- Telegram <-> n8n -->
+        <path class="arrow" d="M170 240h62" />
+        <path class="arrow" d="M232 270h-62" />
+        <text x="201" y="232" text-anchor="middle" class="m">webhook</text>
+        <text x="201" y="286" text-anchor="middle" class="m">reply</text>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--navy)"></i>n8n workflow</span>
+      <span><i style="background:var(--lime)"></i>local service on the same box</span>
+      <span><i style="background:var(--gold-d)"></i>external call, only when rules fail</span>
+      <span>Dashed box: everything inside runs on one Oracle machine</span>
+    </div>
+    <div class="grid g3" style="margin-top:24px">
+      <div class="card"><h3>Leaves the box</h3><p class="small muted" style="margin:0">Telegram messages. One Sarvam API call per new voice line (then cached). One DeepSeek v3.2 call via OpenRouter when rules cannot read the order.</p></div>
+      <div class="card"><h3>Stays on the box</h3><p class="small muted" style="margin:0">Every voice note, every transcript, the FAQ knowledge base, the catalog, sessions and orders. Secrets sit in a <code>0600</code> file on the box, never inside n8n nodes.</p></div>
+      <div class="card"><h3>Kill switch</h3><p class="small muted" style="margin:0">One Config flag stops the whole bot. Fees, swap window, model names and the greeting text are Config values, not buried in code.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="wrap">
+    <span class="eyebrow">Transparency and fairness rules</span>
+    <h2>The customer always sees the full bill first.</h2>
+    <p class="lead muted">These rules come from the spec and each one has a unit test behind it.</p>
+    <div class="grid g2">
+      <ul class="check">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="#22c55e" stroke="none"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff"/></svg><span>Every charge is a line item in the summary. No hidden fee.</span></li>
+        <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>The summary is shown before confirmation. Confirmation is a separate tap.</span></li>
+        <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Any change after confirmation shows before and after, line by line.</span></li>
+        <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Delivery fee and handling fee do not change silently. If they change, show it.</span></li>
+      </ul>
+      <ul class="check">
+        <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Payment mode and delivery promise are always shown.</span></li>
+        <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Every price is labeled "demo" in the demo build.</span></li>
+        <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>The bot never says a price is final when it is a demo value.</span></li>
+        <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Options such as "change order" are shown as buttons, never hidden. Typed "haan" still works as a fallback.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <span class="eyebrow">Privacy and safety</span>
+    <h2>Built so the founder can show it without worry.</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Voice clone, with consent</h3><p class="small muted" style="margin:0">The clone is used only after Shyam Gupta's consent is on file in a private folder. Every voice reply carries the caption "AI-generated voice (Shyam Gupta ki awaaz)". It is never used to make a customer believe they are speaking to him personally. Without consent the bot falls back to text.</p></div>
+      <div class="card"><h3>Stock is never shown</h3><p class="small muted" style="margin:0">The catalog is loaded through a column allowlist. The stock flag only hides unavailable items and is dropped before anything else runs. "Kitna stock hai?" gets a refusal: "Stock ki jaankari main nahi de sakta." Tested in T-06 and T-22.</p></div>
+      <div class="card"><h3>Phone is masked</h3><p class="small muted" style="margin:0">Phone numbers show only the last two digits in every customer message (98xxxxxx10) and are stored masked. Tested in T-10.</p></div>
+      <div class="card"><h3>Test chat only</h3><p class="small muted" style="margin:0">No real customer Telegram IDs are stored in the repo. Sessions live in n8n static data for the demo only. Real payments and real dispatch are out of scope.</p></div>
+      <div class="card"><h3>Secrets stay off the workflow</h3><p class="small muted" style="margin:0">Bot token, Sarvam key and voice id live in a <code>0600</code> file on the Oracle box. n8n nodes never hold them. The STT, FAQ and voice servers listen on <code>127.0.0.1</code> only.</p></div>
+      <div class="card"><h3>Caps on spend</h3><p class="small muted" style="margin:0">200 characters per voice message, 100 voice messages per day. Over the cap the same message goes out as text. Audio is cached by text hash, so a repeated line costs nothing again.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="numbers">
+  <div class="wrap">
+    <span class="eyebrow">Numbers we measured</span>
+    <h2>Real timings from the demo box, 8 Oct 2026.</h2>
+    <p class="lead muted">Measured on the Oracle Cloud machine: aarch64 Linux, 4 CPU, no GPU. Only numbers we recorded ourselves are shown.</p>
+    <div class="tiles">
+      <div class="tile"><div class="n">0.45x</div><div class="u">STT speed, real time</div><div class="s">A 10 s voice note takes about 5 s. A 70 s clip took 29.4 s, near word for word.</div></div>
+      <div class="tile"><div class="n">24 to 45 s</div><div class="u">FAQ answer, gemma3:4b</div><div class="s">Per question, on CPU. Good Hinglish, correct facts. gemma3:1b is 6 to 16 s but weaker.</div></div>
+      <div class="tile"><div class="n">₹3</div><div class="u">per 1,000 voice characters</div><div class="s">Sarvam voice clone pricing. ₹100 free credits, so about 400 short replies at 80 characters each.</div></div>
+      <div class="tile"><div class="n">36</div><div class="u">unit tests green</div><div class="s">T-01 to T-31 plus extras in <code>node n8n/test/test_brain.js</code>. Run again on 8 Oct, all pass.</div></div>
+      <div class="tile"><div class="n">21</div><div class="u">n8n nodes</div><div class="s">One MAIN workflow. Config and kill switch at the top. Voice, FAQ and LLM fallback are branches.</div></div>
+      <div class="tile"><div class="n">31</div><div class="u">Q&amp;A in the knowledge base</div><div class="s">Pulled from kuiklo.com pages. Off-topic questions are refused in 0.14 s without calling a model.</div></div>
+    </div>
+    <p class="note small" style="margin-top:20px">The greeting voice line (121 characters) was generated once and is served from cache. Extraction uses rules first; the DeepSeek fallback via OpenRouter is only called when rules find nothing, so most orders make no LLM call at all.</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <span class="eyebrow">Built on Kuiklo's own words</span>
+    <h2>The FAQ bot answers from kuiklo.com, not from guesses.</h2>
+    <p class="lead muted">31 question and answer pairs were taken from Kuiklo's public pages on 8 Oct 2026. The bot finds the closest 3 with MiniLM embeddings and writes a Hinglish reply with gemma3:4b. A question that scores under 0.30 is turned away with "Yeh sawal Kuiklo ke baare mein nahi lag raha."</p>
+    <div class="grid g2">
+      <div class="card qa">
+        <div><div class="q">Are there delivery charges on Kuiklo? Any hidden fees?</div><div class="a">No. Kuiklo says there are zero delivery charges. What you see at checkout is exactly what you pay. No hidden fees, no platform fees, no surge pricing, no convenience fee.</div></div>
+        <div><div class="q">Which city does Kuiklo serve? Is Kuiklo available in my area?</div><div class="a">Kuiklo operates in Patna only. It serves major localities in Patna, including Kankarbagh, Boring Road, Fraser Road, Kidwaipuri, Bailey Road, Rajendra Nagar, and more.</div></div>
+      </div>
+      <div class="card qa">
+        <div><div class="q">Can I cancel or change my order after placing it?</div><div class="a">Changes or cancellations are only possible within the first 60 seconds after placing an order, because of the rapid fulfilment model. Once an order is packed for delivery, it cannot be cancelled.</div></div>
+        <div><div class="q">What payment methods does Kuiklo accept?</div><div class="a">Credit and debit cards, digital wallets (such as Apple Pay, Google Pay, Amazon Pay, Mobikwik), UPI, LazyPay, Paytm, and cash on delivery in select areas. Payments go through RazorPay as the payment gateway.</div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>What the bot said, live</h3>
+      <p class="small muted" style="margin:0 0 6px">Customer: <b>delivery charge kitna hai?</b></p>
+      <p class="small" style="margin:0 0 12px">Bot (gemma3:4b, 24 s): "Koi delivery charge nahi hai! Kuch hidden fees bhi nahi hain, aap jo checkout pe de..."</p>
+      <p class="small muted" style="margin:0 0 6px">Customer: <b>kaunse area mein deliver karte ho?</b></p>
+      <p class="small" style="margin:0">Bot (gemma3:4b, 31 s): "Kuiklo Patna mein hi kaam karta hai. Hum Kankarbagh, Boring Road, Fraser Road, Kidw..."</p>
+      <div class="tagrow"><span class="tag">FAQ</span><span class="tag">Support</span><span class="tag">About</span><span class="tag">10-minute delivery</span><span class="tag">Affordable grocery</span><span class="tag">Terms</span><span class="tag">Privacy</span><span class="tag">Refer and Earn</span><span class="tag">Kuiklo Money</span><span class="tag">Kuiklo Lit</span><span class="tag">Print on Demand</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="catalog">
+  <div class="wrap">
+    <span class="eyebrow">Demo catalog</span>
+    <h2>197 mock SKUs, 114 products, 14 categories, Patna-flavoured.</h2>
+    <p class="lead muted">Ten of the rows the bot reads today. The list is synthetic: real brands, made-up prices. It will be replaced by Kuiklo's real list. The stock flag is never shown to a customer.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>SKU</th><th>Product</th><th>Brand</th><th>Variant</th><th>Unit</th><th class="r">Price (demo)</th><th>Category</th></tr></thead>
+        <tbody>
+          <tr><td>ATA-001</td><td>atta</td><td>Aashirvaad</td><td>Select Sharbati</td><td>kg</td><td class="r">₹48</td><td>staples</td></tr>
+          <tr><td>ATA-002</td><td>atta</td><td>Pillsbury</td><td>Chakki Fresh</td><td>kg</td><td class="r">₹52</td><td>staples</td></tr>
+          <tr><td>DAL-001</td><td>dal</td><td>Tata Sampann</td><td>Toor (Arhar)</td><td>kg</td><td class="r">₹160</td><td>staples</td></tr>
+          <tr><td>TEL-001</td><td>tel</td><td>Fortune</td><td>Sunflower 1 L</td><td>pcs</td><td class="r">₹140</td><td>staples</td></tr>
+          <tr><td>DUD-001</td><td>doodh</td><td>Sudha</td><td>Toned 500 ml</td><td>pcs</td><td class="r">₹26</td><td>dairy</td></tr>
+          <tr><td>PNR-001</td><td>paneer</td><td>Sudha</td><td>Paneer 200 g</td><td>pcs</td><td class="r">₹80</td><td>dairy</td></tr>
+          <tr><td>BRD-001</td><td>bread</td><td>Harvest Gold</td><td>White 400 g</td><td>pcs</td><td class="r">₹40</td><td>bakery</td></tr>
+          <tr><td>ROT-001</td><td>roti</td><td>Kuiklo Kitchen</td><td>Tawa Roti</td><td>pcs</td><td class="r">₹10</td><td>ready</td></tr>
+          <tr><td>BHI-001</td><td>bhindi</td><td>Farm Fresh</td><td>Loose</td><td>kg</td><td class="r">₹40</td><td>vegetables</td></tr>
+          <tr><td>KEL-001</td><td>kela</td><td>Farm Fresh</td><td>Dozen</td><td>pcs</td><td class="r">₹50</td><td>fruits</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted" style="margin-top:12px">Columns the bot may read: <code>sku, product, brand, variant, unit, unit_price_inr, category, in_stock_flag</code>. The flag only hides an item. Quantities are never read.</p>
+  </div>
+</section>
+
+<section id="next">
+  <div class="wrap">
+    <span class="eyebrow">What is next</span>
+    <h2>From demo to Kuiklo's counter.</h2>
+    <ul class="next">
+      <li><i>1</i><div><b>WhatsApp Business API.</b> Same flow, same brain. Telegram was the fastest channel to prove it.</div></li>
+      <li><i>2</i><div><b>Real catalog and real prices.</b> Swap the mock CSV for Kuiklo's list through the same column allowlist.</div></li>
+      <li><i>3</i><div><b>Order writes.</b> Each confirmed order goes to a sheet or into Kuiklo's own system instead of n8n static data.</div></li>
+      <li><i>4</i><div><b>Delivery slots from store hours.</b> Morning and Evening today; real slots once store timings are plugged in.</div></li>
+      <li><i>5</i><div><b>More lines in the founder's voice.</b> After written consent, the summary and FAQ replies can be voiced too, with the same AI label and caps.</div></li>
+    </ul>
+    <p class="note warn small" style="margin-top:20px">Pending manual checks: a typed order and a 60-second swap in a real Telegram chat from the owner's phone (M-01, M-03). The workflow is live and the webhook is set; unit tests and a real voice bubble with buttons are confirmed.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Unofficial demo built for Kuiklo by Satvik Jain, 8 Oct 2026. Not affiliated with Kuiklo unless confirmed in writing. Mock prices.</div>
+    <div class="row">
+      <a href="https://github.com/satvik-jain-iitd/kuiklo-telegram-order-demo" target="_blank" rel="noopener">GitHub repo</a>
+      <a href="https://kuiklo.com" target="_blank" rel="noopener">kuiklo.com</a>
+      <a href="https://t.me/Kuicklobot" target="_blank" rel="noopener">@Kuicklobot on Telegram</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
