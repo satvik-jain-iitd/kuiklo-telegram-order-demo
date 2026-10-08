@@ -1,0 +1,24 @@
+sku,product,brand,variant,unit,unit_price_inr,category,in_stock_flag
+ATA-001,atta,Aashirvaad,Select Sharbati,kg,48,staples,1
+ATA-002,atta,Pillsbury,Chakki Fresh,kg,52,staples,1
+ATA-003,atta,Fortune,Chakki Fresh,kg,50,staples,1
+ROT-001,roti,Kuiklo Kitchen,Tawa Roti,pcs,10,ready,1
+BHI-001,bhindi,Farm Fresh,Loose,kg,40,vegetables,1
+ALO-001,aloo,Farm Fresh,Loose,kg,25,vegetables,1
+ALO-002,aloo,Farm Fresh,Baby Potato,kg,35,vegetables,1
+PYZ-001,pyaaz,Farm Fresh,Loose,kg,30,vegetables,1
+TMT-001,tamatar,Farm Fresh,Loose,kg,35,vegetables,1
+DUD-001,doodh,Amul,Taaza Toned 500ml,pcs,27,dairy,1
+DUD-002,doodh,Sudha,Toned 500ml,pcs,25,dairy,1
+DHI-001,dahi,Amul,Masti 400g,pcs,35,dairy,1
+CHA-001,chawal,India Gate,Everyday Basmati,kg,95,staples,1
+CHA-002,chawal,Daawat,Rozana Gold,kg,85,staples,1
+DAL-001,dal,Tata Sampann,Toor,kg,160,staples,1
+DAL-002,dal,Fortune,Toor,kg,150,staples,1
+CHN-001,cheeni,Madhur,Sugar,kg,45,staples,1
+TEL-001,tel,Fortune,Sunflower 1L,pcs,140,staples,1
+TEL-002,tel,Saffola,Gold 1L,pcs,165,staples,1
+NMK-001,namak,Tata,Iodised 1kg,pcs,25,staples,1
+AND-001,ande,Farm Fresh,6 pcs tray,pcs,45,dairy,1
+BRD-001,bread,Harvest Gold,White 400g,pcs,40,bakery,1
+BRD-002,bread,Britannia,Brown 400g,pcs,45,bakery,0

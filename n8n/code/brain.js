@@ -1,0 +1,224 @@
+// Kuiklo order brain. Pure logic, no n8n objects. Runs inside an n8n Code node
+// (assemble.js wraps it) and inside node tests.
+//
+// brain(update, store, cfg, now) -> { messages: [{chat_id, text, keyboard}], session }
+//   update: { chat_id, text, callback_data, from_name, llm_items? }
+//   store:  object that persists between runs (workflow static data). store.sessions[chat_id]
+//   cfg:    Config node values (fees, catalog_json, swap_window_s)
+//   now:    Date (injected so tests can move the clock)
+
+const NUM_WORDS = { ek: 1, do: 2, teen: 3, char: 4, chaar: 4, paanch: 5, panch: 5, chhe: 6, che: 6, saat: 7, aath: 8, nau: 9, das: 10,
+  aadha: 0.5, adha: 0.5, half: 0.5, dedh: 1.5, dhai: 2.5, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, ten: 10 };
+const UNITS = { kg: 'kg', kilo: 'kg', kilogram: 'kg', kilos: 'kg', g: 'g', gm: 'g', gram: 'g', grams: 'g',
+  pcs: 'pcs', pc: 'pcs', piece: 'pcs', pieces: 'pcs', packet: 'pcs', packets: 'pcs', pack: 'pcs', litre: 'pcs', liter: 'pcs', ltr: 'pcs', l: 'pcs', dozen: 'dozen' };
+const ALIASES = { atta: ['atta', 'aata', 'flour'], roti: ['roti', 'rotiyan', 'rotiya', 'chapati', 'chapatis', 'rotis'], bhindi: ['bhindi', 'okra'],
+  aloo: ['aloo', 'alu', 'potato', 'potatoes'], pyaaz: ['pyaaz', 'pyaz', 'onion', 'onions'], tamatar: ['tamatar', 'tomato', 'tomatoes'],
+  doodh: ['doodh', 'dudh', 'milk'], dahi: ['dahi', 'curd'], chawal: ['chawal', 'chaval', 'rice'], dal: ['dal', 'daal'],
+  cheeni: ['cheeni', 'chini', 'sugar', 'shakkar'], tel: ['tel', 'oil'], namak: ['namak', 'salt'], ande: ['ande', 'anda', 'egg', 'eggs'],
+  bread: ['bread', 'doubleroti'] };
+const STOP = new Set(['aur', 'and', 'ka', 'ki', 'ke', 'ko', 'se', 'mein', 'me', 'chahiye', 'chaiye', 'bhej', 'do', 'dena', 'order', 'please', 'plz',
+  'mujhe', 'muje', 'hai', 'ho', 'kar', 'karo', 'dijiye', 'le', 'lo', 'ek', 'bhi', 'sath', 'saath', 'wala', 'wali', 'the', 'a', 'of', 'with', 'for', 'ja', 'jao',
+  'kal', 'aaj', 'parso', 'subah', 'morning', 'shaam', 'sham', 'evening', 'delivery', 'deliver', 'ghar', 'par', 'pe', 'kilo', 'kg', 'gram', 'g', 'pcs', 'piece', 'pieces', 'packet', 'pack', 'litre', 'liter', 'l', 'ltr', 'dozen', 'hona', 'chahie', 'den', 'dedo', 'bhejo', 'hello', 'hi', 'namaste']);
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function pad(s, n) { s = String(s); return s.length >= n ? s : s + ' '.repeat(n - s.length); }
+function lpad(s, n) { s = String(s); return s.length >= n ? s : ' '.repeat(n - s.length) + s; }
+function money(n) { return '₹' + (Math.round(n * 100) / 100).toString(); }
+function tokens(text) { return String(text || '').toLowerCase().replace(/[,.!?;:()]/g, ' ').replace(/(\d)(kg|g|gm|l|ltr|pcs)\b/g, '$1 $2').split(/\s+/).filter(Boolean); }
+function productOf(tok) { for (const p in ALIASES) if (ALIASES[p].includes(tok)) return p; return null; }
+function numOf(tok) { if (/^\d+(\.\d+)?$/.test(tok)) return parseFloat(tok); return NUM_WORDS[tok] ?? null; }
+function fmtDate(d) { return d.toISOString().slice(0, 10); }
+function addDays(d, n) { const x = new Date(d); x.setUTCDate(x.getUTCDate() + n); return x; }
+function hinDate(iso, now) { const t = fmtDate(now), k = fmtDate(addDays(now, 1)); const [, m, d] = iso.split('-'); const dd = `${+d} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m - 1]}`; return iso === t ? `aaj (${dd})` : iso === k ? `kal (${dd})` : dd; }
+
+// ---- catalog (allowlisted columns only, never stock quantities) ----
+function loadCatalog(cfg) {
+  const rows = JSON.parse(cfg.catalog_json);
+  const ALLOW = ['sku', 'product', 'brand', 'variant', 'unit', 'unit_price_inr', 'category', 'in_stock_flag'];
+  return rows.map(r => { const o = {}; for (const k of ALLOW) if (k in r) o[k] = r[k]; return o; })
+    .filter(r => String(r.in_stock_flag) !== '0').map(r => { const { in_stock_flag, ...o } = r; o.unit_price_inr = +o.unit_price_inr; return o; });
+}
+function defaultSku(catalog, product) { return catalog.find(r => r.product === product); }
+function brandsFor(catalog, product) { return catalog.filter(r => r.product === product); }
+
+// ---- extraction (rules) ----
+function extract(text, now) {
+  const toks = tokens(text);
+  const items = [], unknown = [];
+  let date = null, slot = null;
+  toks.forEach((t, i) => {
+    if (t === 'kal') date = fmtDate(addDays(now, 1)); else if (t === 'aaj') date = fmtDate(now); else if (t === 'parso') date = fmtDate(addDays(now, 2));
+    if (['subah', 'morning'].includes(t)) slot = 'morning'; if (['shaam', 'sham', 'evening', 'raat'].includes(t)) slot = 'evening';
+  });
+  const used = new Set();
+  toks.forEach((t, i) => {
+    const p = productOf(t); if (!p) return;
+    let qty = null, unit = null;
+    // number before (within 2 tokens) or after (within 2 tokens); unit next to the number
+    for (const j of [i - 1, i - 2, i + 1, i + 2]) {
+      if (j < 0 || j >= toks.length || used.has(j)) continue;
+      const n = numOf(toks[j]); if (n === null) continue;
+      qty = n; used.add(j);
+      for (const k of [j + 1, j - 1]) { if (k >= 0 && k < toks.length && k !== i && UNITS[toks[k]]) { unit = UNITS[toks[k]]; used.add(k); break; } }
+      break;
+    }
+    if (unit === 'g' && qty !== null) { qty = qty / 1000; unit = 'kg'; }
+    if (unit === 'dozen' && qty !== null) { qty = qty * 12; unit = 'pcs'; }
+    items.push({ product: p, qty, unit });
+    used.add(i);
+  });
+  toks.forEach((t, i) => { if (!used.has(i) && !STOP.has(t) && numOf(t) === null && !UNITS[t] && !productOf(t) && t.length > 2) unknown.push(t); });
+  return { items, unknown_terms: unknown, date, slot };
+}
+
+// ---- pricing ----
+function price(session, cfg) {
+  const subtotal = session.items.reduce((s, it) => s + it.line_total, 0);
+  const delivery_fee = +cfg.delivery_fee_inr, handling_fee = +cfg.handling_fee_inr;
+  return { items_subtotal: subtotal, delivery_fee, handling_fee, total: subtotal + delivery_fee + handling_fee };
+}
+function lineFor(catRow, qty) { return { sku: catRow.sku, product: catRow.product, brand: catRow.brand, variant: catRow.variant, qty, unit: catRow.unit, unit_price: catRow.unit_price_inr, line_total: Math.round(qty * catRow.unit_price_inr * 100) / 100 }; }
+
+// ---- rendering ----
+function itemLine(it) { return `• ${cap(it.product)} ${it.qty} ${it.unit}`; }
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function summary(session, cfg, now) {
+  const ch = price(session, cfg);
+  const rows = session.items.map(it => pad(`${cap(it.product)} (${it.brand})`, 22) + pad(`${it.qty} ${it.unit}`, 8) + lpad(money(it.line_total), 7));
+  const t = [
+    '🧾 <b>Order Summary</b>', '', '<pre>', pad('Item', 22) + pad('Qty', 8) + lpad('Price', 7), ...rows, '-'.repeat(37),
+    pad('Items subtotal', 30) + lpad(money(ch.items_subtotal), 7), pad('Delivery fee (demo)', 30) + lpad(money(ch.delivery_fee), 7),
+    pad('Handling fee (demo)', 30) + lpad(money(ch.handling_fee), 7), '-'.repeat(37), pad('TOTAL', 30) + lpad(money(ch.total), 7), '</pre>', '',
+    `📦 Delivery: ${hinDate(session.delivery.date, now)}, ${session.delivery.slot} slot`, '💳 Payment: COD (cash on delivery)',
+    `🏠 Area: ${esc(session.customer.area)}`, `👤 Naam: ${esc(session.customer.name)} | 📱 ${session.customer.phone_masked}`, '',
+    'Prices and fees are demo values. Order confirm karne se pehle sab kuch dekh lijiye.'];
+  return t.join('\n');
+}
+function kb(rows) { return { rows: rows.map(r => ({ row: { buttons: r.map(([text, data]) => ({ text, additionalFields: { callback_data: data } })) } })) }; }
+function maskPhone(p) { const d = String(p).replace(/\D/g, ''); return d.length >= 4 ? d.slice(0, 2) + 'x'.repeat(d.length - 4) + d.slice(-2) : 'xx'; }
+
+// ---- state machine ----
+const FIELDS = ['date', 'slot', 'name', 'phone', 'area'];
+function missing(s) { if (s.items.some(it => it.qty === null)) return 'qty'; for (const f of FIELDS) { if (f === 'date' && !s.delivery.date) return f; if (f === 'slot' && !s.delivery.slot) return f; if (f === 'phone' && !s.customer.phone_masked) return f; if (['name', 'area'].includes(f) && !s.customer[f]) return f; } return null; }
+function ask(s, field, now) {
+  const k = fmtDate(addDays(now, 1)), t = fmtDate(now);
+  switch (field) {
+    case 'qty': { const it = s.items.find(i => i.qty === null); return { text: `${cap(it.product)} kitna chahiye? (jaise: 1 kg, 500 g)`, keyboard: kb([[['500 g', `qty:${it.product}:0.5:kg`], ['1 kg', `qty:${it.product}:1:kg`], ['2 kg', `qty:${it.product}:2:kg`]]]) }; }
+    case 'date': return { text: 'Delivery kab chahiye?', keyboard: kb([[['Aaj', `date:${t}`], ['Kal', `date:${k}`]]]) };
+    case 'slot': return { text: 'Ek detail chahiye: Delivery slot kya rakhein?', keyboard: kb([[['Morning', 'slot:morning'], ['Evening', 'slot:evening']]]) };
+    case 'name': return { text: 'Ek sawal: aapka naam kya hai?', keyboard: null };
+    case 'phone': return { text: 'Aapka phone number? (10 digit)', keyboard: null };
+    case 'area': return { text: 'Delivery area / mohalla kaunsa hai?', keyboard: kb([[['Kankarbagh', 'area:Kankarbagh'], ['Boring Road', 'area:Boring Road'], ['Patna City', 'area:Patna City']]]) };
+  }
+}
+function newSession(chat_id) { return { chat_id, state: 'IDLE', items: [], delivery: { date: null, slot: null }, customer: { name: null, phone_masked: null, area: null }, change_log: [], order_id: null }; }
+function nextOrderId(store, now) { const d = fmtDate(now).replace(/-/g, ''); store.seq = store.seq || {}; store.seq[d] = (store.seq[d] || 0) + 1; return `ORD-${d}-${String(store.seq[d]).padStart(4, '0')}`; }
+function understood(s, now) { const lines = ['Maine yeh samjha:', ...s.items.map(it => it.qty === null ? `• ${cap(it.product)} (quantity?)` : itemLine(it))]; if (s.delivery.date) lines.push(`📅 Delivery: ${hinDate(s.delivery.date, now)}`); return lines.join('\n'); }
+function collectOrReview(s, cfg, now, msgs) {
+  const m = missing(s);
+  if (m) { s.state = 'COLLECTING'; msgs.push(ask(s, m, now)); return; }
+  s.state = 'REVIEW';
+  msgs.push({ text: summary(s, cfg, now), keyboard: kb([[['✅ Confirm order', 'confirm'], ['✏️ Kuch badalna hai', 'edit']], [['❌ Cancel', 'cancel']]]) });
+}
+function changeSummary(s, old, nu, cfg) {
+  const before = price({ items: s.items }, cfg), after = price({ items: s.items.map(it => it.sku === old.sku ? nu : it) }, cfg);
+  return ['🔁 <b>Change summary</b>', `${cap(old.product)}: ${old.brand} ${old.qty} ${old.unit} ${money(old.line_total)} → ${nu.brand} ${nu.qty} ${nu.unit} ${money(nu.line_total)} (${nu.line_total >= old.line_total ? '+' : '-'}${money(Math.abs(nu.line_total - old.line_total))})`,
+    `Items subtotal: ${money(before.items_subtotal)} → ${money(after.items_subtotal)}`, 'Delivery and handling fees: unchanged', `TOTAL: ${money(before.total)} → ${money(after.total)}`].join('\n');
+}
+
+// questions about the order or catalog (P6). Returns text or null.
+function answerQuestion(text, s, catalog, cfg, now) {
+  const t = String(text || '').toLowerCase();
+  if (/stock|bache|bacha|kitne hain store|available kitn/.test(t)) return 'Stock ki jaankari main nahi de sakta.';
+  if (/brand|option|variety|kaun ?se/.test(t)) { const p = tokens(t).map(productOf).find(Boolean); if (p) { const b = brandsFor(catalog, p); return b.length ? `${cap(p)} ke brand options (demo catalog):\n` + b.map(r => `• ${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`).join('\n') : `${cap(p)} abhi catalog mein nahi hai.`; } }
+  const has = s.items.length > 0;
+  if (/kitne item|items? kitn|kya kya hai|list/.test(t)) return has ? `Aapke order mein ${s.items.length} item hain:\n` + s.items.map(itemLine).join('\n') : 'Abhi koi order nahi hai. Voice note ya text bhej kar order karein.';
+  if (/total|kitna (paisa|hua|bill)|amount/.test(t)) return has ? `Total: ${money(price(s, cfg).total)} (demo values, COD)` : 'Abhi koi order nahi hai.';
+  if (/delivery|kab aayega|kab milega/.test(t)) return has && s.delivery.date ? `📦 Delivery: ${hinDate(s.delivery.date, now)}, ${s.delivery.slot || '?'} slot` : 'Abhi koi order nahi hai.';
+  return null;
+}
+
+function brain(update, store, cfg, now) {
+  now = now || new Date();
+  const catalog = loadCatalog(cfg);
+  store.sessions = store.sessions || {};
+  const cid = String(update.chat_id);
+  let s = store.sessions[cid] || (store.sessions[cid] = newSession(cid));
+  const msgs = [];
+  const data = update.callback_data || '';
+  const text = update.text || '';
+  const swapOpen = () => s.state === 'SWAP_WINDOW' && now.getTime() < Date.parse(s.swap_expires_at);
+  const expired = () => { msgs.push({ text: '⏱️ Change ka time nikal gaya. Order change ke liye Kuiklo support se contact karein.', keyboard: null }); s.state = 'CLOSED'; };
+
+  // ---- button presses ----
+  if (data) {
+    if (data === 'confirm' && s.state === 'REVIEW') {
+      s.state = 'SWAP_WINDOW'; s.order_id = nextOrderId(store, now); s.confirmed_at = now.toISOString(); s.swap_expires_at = new Date(now.getTime() + cfg.swap_window_s * 1000).toISOString();
+      store.orders = store.orders || []; store.orders.push(JSON.parse(JSON.stringify({ ...s, charges: price(s, cfg), payment_mode: 'COD' })));
+      msgs.push({ text: `✅ Aapka order process ho raha hai.\nOrder ID: ${s.order_id}\n\n⏱️ Ek minute ke andar koi change ho to abhi bata sakte hain.`, keyboard: kb([[['🔄 Order change karna hai', 'swap'], ['👍 Sab theek hai', 'ok']]]) });
+    } else if (data === 'confirm') { msgs.push({ text: s.order_id ? `Order ${s.order_id} pehle hi confirm ho chuka hai.` : 'Abhi confirm karne ke liye koi order nahi hai.', keyboard: null }); }
+    else if (data === 'edit' && s.state === 'REVIEW') { s.state = 'COLLECTING'; msgs.push({ text: 'Theek hai. Poora order dobara bhej dijiye (voice ya text), ya sirf jo badalna hai woh likhiye, jaise "atta 2 kg".', keyboard: null }); }
+    else if (data === 'cancel') { store.sessions[cid] = newSession(cid); msgs.push({ text: '❌ Order cancel kar diya. Naya order ke liye voice note ya text bhejein.', keyboard: null }); }
+    else if (data.startsWith('date:')) { s.delivery.date = data.slice(5); collectOrReview(s, cfg, now, msgs); }
+    else if (data.startsWith('slot:')) { s.delivery.slot = data.slice(5); collectOrReview(s, cfg, now, msgs); }
+    else if (data.startsWith('area:')) { s.customer.area = data.slice(5); collectOrReview(s, cfg, now, msgs); }
+    else if (data.startsWith('qty:')) { const [, p, q, u] = data.split(':'); const it = s.items.find(i => i.product === p); if (it) { const row = defaultSku(catalog, p); Object.assign(it, lineFor(row, +q)); if (u) it.unit = u; } collectOrReview(s, cfg, now, msgs); }
+    else if (data === 'ok') { msgs.push({ text: '👍 Shukriya! Order dispatch ke liye taiyaar hai.', keyboard: null }); }
+    else if (data === 'swap') { if (!swapOpen()) { if (s.state === 'SWAP_WINDOW') expired(); else msgs.push({ text: 'Abhi koi confirmed order nahi hai.', keyboard: null }); } else msgs.push({ text: 'Kaunsa item badalna hai?', keyboard: kb([s.items.map(it => [cap(it.product), `swapitem:${it.sku}`])]) }); }
+    else if (data.startsWith('swapitem:')) { if (!swapOpen()) expired(); else { const it = s.items.find(i => i.sku === data.slice(9)); const opts = brandsFor(catalog, it.product); msgs.push({ text: `${cap(it.product)} ke brand options (demo catalog):`, keyboard: kb(opts.map(r => [[`${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`, `swapto:${it.sku}:${r.sku}`]])) }); } }
+    else if (data.startsWith('swapto:')) { if (!swapOpen()) expired(); else { const [, from, to] = data.split(':'); const old = s.items.find(i => i.sku === from); const nu = lineFor(catalog.find(r => r.sku === to), old.qty); s.pending_swap = { from, to }; s.state = 'SWAP_PENDING'; msgs.push({ text: changeSummary(s, old, nu, cfg), keyboard: kb([[['✅ Change confirm karein', 'swapconfirm'], ['❌ Purana order rakhein', 'swapcancel']]]) }); } }
+    else if (data === 'swapconfirm' && s.state === 'SWAP_PENDING') {
+      if (now.getTime() >= Date.parse(s.swap_expires_at)) { expired(); } else {
+        const { from, to } = s.pending_swap; const idx = s.items.findIndex(i => i.sku === from); const old = s.items[idx]; const nu = lineFor(catalog.find(r => r.sku === to), old.qty);
+        s.items[idx] = nu; s.change_log.push({ at: now.toISOString(), reason: 'customer brand swap', before: old, after: nu, total_before: price({ items: s.items.map((it, i) => i === idx ? old : it) }, cfg).total, total_after: price(s, cfg).total });
+        s.state = 'CLOSED'; delete s.pending_swap;
+        msgs.push({ text: `✅ Aapke order mein change kar diya gaya hai. Updated order dispatch ho gaya.\nNaya total: ${money(price(s, cfg).total)}`, keyboard: null });
+      }
+    } else if (data === 'swapcancel') { delete s.pending_swap; s.state = swapOpen() ? 'SWAP_WINDOW' : 'CLOSED'; msgs.push({ text: 'Theek hai, purana order jaisa tha waisa hi rahega.', keyboard: null }); }
+    else { msgs.push({ text: 'Yeh button ab kaam nahi karta. Naya order ke liye voice note ya text bhejein.', keyboard: null }); }
+    return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s };
+  }
+
+  // ---- text (typed or transcribed) ----
+  if (!text.trim()) { msgs.push({ text: 'Kuch sunai nahi diya. Voice note dobara bhejein ya order type karein.', keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
+  if (/^\/start/.test(text)) { store.sessions[cid] = newSession(cid); msgs.push({ text: '👋 Kuiklo demo bot mein swagat hai!\n\nVoice note ya text bhejein, jaise:\n"1 kg atta, 2 roti, 3 kg bhindi, kal subah"\n\n⚠️ Yeh demo hai. Prices demo values hain.', keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
+
+  // collecting a typed answer
+  if (s.state === 'COLLECTING') {
+    const m = missing(s);
+    if (m === 'name' && !/\d/.test(text) && tokens(text).every(t => !productOf(t))) { s.customer.name = text.trim().slice(0, 40); collectOrReview(s, cfg, now, msgs); return { messages: msgs.map(x => ({ chat_id: cid, ...x })), session: s }; }
+    if (m === 'phone' && /\d{10}/.test(text.replace(/\D/g, ''))) { s.customer.phone_masked = maskPhone(text); collectOrReview(s, cfg, now, msgs); return { messages: msgs.map(x => ({ chat_id: cid, ...x })), session: s }; }
+    if (m === 'area' && tokens(text).every(t => !productOf(t))) { s.customer.area = text.trim().slice(0, 40); collectOrReview(s, cfg, now, msgs); return { messages: msgs.map(x => ({ chat_id: cid, ...x })), session: s }; }
+  }
+  // yes/no typed fallback in REVIEW
+  if (s.state === 'REVIEW' && /^(haan|han|ha|yes|ok|confirm|theek|thik)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'confirm' }, store, cfg, now);
+  if (s.state === 'REVIEW' && /^(nahi|no|cancel)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'cancel' }, store, cfg, now);
+
+  // question?
+  const q = answerQuestion(text, s, catalog, cfg, now);
+  const ex = extract(text, now);
+  if (update.llm_items && update.llm_items.length) { ex.items = update.llm_items.map(li => ({ product: productOf(li.product) || li.product, qty: li.qty ?? null, unit: li.unit || null })).filter(li => productOf(li.product)); ex.unknown_terms = []; }
+  // a question wins over an order unless the text carries a quantity ("2 kg atta" is an order, "atta ke brands?" is a question)
+  if (q && (ex.items.length === 0 || ex.items.every(it => it.qty === null))) { msgs.push({ text: q, keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
+  if (ex.items.length === 0) {
+    msgs.push({ text: 'Mujhe order samajh nahi aaya. Item aur quantity bolein, jaise "1 kg atta, 2 roti".' + (ex.unknown_terms.length ? `\n(Yeh words nahi mile: ${esc(ex.unknown_terms.slice(0, 5).join(', '))})` : ''), keyboard: null });
+    return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s };
+  }
+  // new order or edit: build items from catalog defaults
+  if (['IDLE', 'CLOSED', 'CANCELLED', 'SWAP_WINDOW', 'REVIEW'].includes(s.state)) { const keep = s.customer; s = store.sessions[cid] = newSession(cid); if (s.state === 'IDLE' && keep.name) s.customer = { ...keep }; }
+  for (const it of ex.items) {
+    const row = defaultSku(catalog, it.product); if (!row) { ex.unknown_terms.push(it.product); continue; }
+    let qty = it.qty, unit = it.unit || row.unit;
+    if (row.unit === 'pcs' && qty === null) qty = 1;
+    if (row.unit === 'pcs') unit = 'pcs';
+    const line = qty === null ? { sku: row.sku, product: row.product, brand: row.brand, variant: row.variant, qty: null, unit: row.unit, unit_price: row.unit_price_inr, line_total: 0 } : lineFor(row, qty);
+    const existing = s.items.findIndex(x => x.product === it.product);
+    if (existing >= 0) s.items[existing] = line; else s.items.push(line);
+  }
+  if (ex.date) s.delivery.date = ex.date; if (ex.slot) s.delivery.slot = ex.slot;
+  msgs.push({ text: understood(s, now) + (ex.unknown_terms.length ? `\n(Samajh nahi aaya: ${esc(ex.unknown_terms.slice(0, 5).join(', '))})` : ''), keyboard: null });
+  collectOrReview(s, cfg, now, msgs);
+  return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s };
+}
+
+if (typeof module !== 'undefined' && module && module.exports) module.exports = { brain, extract, loadCatalog, price, summary, maskPhone, answerQuestion };

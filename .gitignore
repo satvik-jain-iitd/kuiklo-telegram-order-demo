@@ -1,0 +1,6 @@
+n8n/build/
+.env
+*.wav
+*.ogg
+docs/consent/*
+!docs/consent/.gitkeep
