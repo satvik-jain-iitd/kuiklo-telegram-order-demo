@@ -201,7 +201,8 @@ function brain(update, store, cfg, now) {
   // a question wins over an order unless the text carries a quantity ("2 kg atta" is an order, "atta ke brands?" is a question)
   if (q && (ex.items.length === 0 || ex.items.every(it => it.qty === null))) { msgs.push({ text: q, keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
   if (ex.items.length === 0) {
-    msgs.push({ text: 'Mujhe order samajh nahi aaya. Item aur quantity bolein, jaise "1 kg atta, 2 roti".' + (ex.unknown_terms.length ? `\n(Yeh words nahi mile: ${esc(ex.unknown_terms.slice(0, 5).join(', '))})` : ''), keyboard: null });
+    // not an order and not a known question: hand the text to the FAQ chatbot (n8n calls /ask when kb_query is set)
+    msgs.push({ text: 'Mujhe order samajh nahi aaya. Item aur quantity bolein, jaise "1 kg atta, 2 roti".' + (ex.unknown_terms.length ? `\n(Yeh words nahi mile: ${esc(ex.unknown_terms.slice(0, 5).join(', '))})` : ''), keyboard: null, kb_query: text.trim() });
     return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s };
   }
   // new order or edit: build items from catalog defaults

@@ -41,3 +41,29 @@ Time spent: C3.
 | M-03 swap inside and after 60 s | pending |
 
 Note: a fake update POSTed to the webhook returns 403 (n8n checks the Telegram secret token). Real chat test must come from the owner.
+
+## 2026-10-08 | KB chatbot on Oracle
+Built:
+- `stt/kb.py` + `docs/kb/kuiklo_kb.md` (31 `## Q:` chunks) deployed to `~/bhavna-stt/` on Oracle. `stt_server.py` now serves `POST /ask` next to `/transcribe`. Same pm2 process `bhavna-stt`, 127.0.0.1:8787.
+- Retrieval: `all-MiniLM-L6-v2` (downloaded to the HF cache on first run), cosine top 3, `MIN_SCORE` 0.30. Answer: local Ollama.
+- Self-check `./venv/bin/python kb.py kuiklo_kb.md` passed first time: `kb self-check ok 31 chunks 0.35 0.5 0.04`. No bug in kb.py.
+- `/health` ok, `/transcribe` still works (real wav, 40 s), logs show `kb chunks 31` and `ready`.
+Model timing (same 5 questions, 4 CPU, no GPU):
+- `gemma3:4b`: 24 to 45 s per answer. Good Hinglish, correct facts.
+- `gemma3:1b`: 6 to 16 s per answer (first call includes model load). Faster but answers are weaker: mostly English, one said "I don't know" and then gave the fact, one Hindi line was garbled ("Mai nahi jaan... Kunta").
+- Default in `kb.py` switched to `gemma3:1b` (rule: under 25 s). `KB_LLM_MODEL=gemma3:4b` env var brings the better model back if speed is acceptable.
+
+| Question | Score | Model | Seconds | Answer (first 80 chars) |
+|---|---|---|---|---|
+| delivery charge kitna hai? | 0.35 | gemma3:4b | 24.16 | Koi delivery charge nahi hai! Kuch hidden fees bhi nahi hain, aap jo checkout pe de |
+| order cancel kaise karun? | 0.48 | gemma3:4b | 44.67 | Apne order 60 seconds ke andar cancel kar sakte hain, placement ke ek minute mein. O |
+| kaunse area mein deliver karte ho? | 0.41 | gemma3:4b | 30.62 | Kuiklo Patna mein hi kaam karta hai. Hum Kankarbagh, Boring Road, Fraser Road, Kidw |
+| payment COD hai kya? | 0.38 | gemma3:4b | 40.30 | Haan, hum COD bhi accept karte hain! Lekin yeh select areas mein hi available hai. Y |
+| what is the capital of France | 0.04 | none (off-topic) | 0.14 | Yeh sawal Kuiklo ke baare mein nahi lag raha. Order, delivery, payment ya refund ke |
+| delivery charge kitna hai? | 0.35 | gemma3:1b | 16.28 | I don't know about delivery charges. Kuiklo states there are zero charges, so you on |
+| order cancel kaise karun? | 0.48 | gemma3:1b | 6.52 | Please place your order before 60 seconds after it's placed. Changes or cancellation |
+| kaunse area mein deliver karte ho? | 0.41 | gemma3:1b | 6.82 | Mai nahi jaan. Kuiklo Patna mein delivery karti hai. Kunta, aapko bhi Patna mein del |
+| payment COD hai kya? | 0.38 | gemma3:1b | 6.39 | You can pay through credit/debit cards, digital wallets like Apple Pay & Google Pay, |
+| what is the capital of France | 0.04 | none (off-topic) | 0.01 | Yeh sawal Kuiklo ke baare mein nahi lag raha. Order, delivery, payment ya refund ke |
+
+Open: scores for Hinglish questions sit at 0.35 to 0.48, near `MIN_SCORE` 0.30. Watch for on-topic questions that fall under 0.30. Owner to pick: 1b (fast, weak) or 4b (slow, good), or qwen2.5:3b as a middle test.

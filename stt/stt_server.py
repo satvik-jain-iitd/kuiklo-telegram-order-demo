@@ -7,6 +7,8 @@ temperature 0, no timestamps.
 
 POST /transcribe  body = raw audio bytes (OGG Opus from Telegram, WAV, MP3 ...)
                   -> {"text": "...", "seconds": 3.2}
+POST /ask         body = {"question": "..."}  (Kuiklo FAQ, MiniLM retrieval + local Ollama)
+                  -> {"answer": "...", "sources": [...], "score": 0.7, "model": "gemma3:4b"}
 GET  /health      -> {"ok": true}
 
 Listens on 127.0.0.1:8787 only. n8n on the same box calls it.
@@ -28,6 +30,9 @@ print(f"loading {MODEL_DIR}", flush=True)
 model = WhisperModel(MODEL_DIR, device="cpu", compute_type="int8", cpu_threads=4)
 import numpy as np
 list(model.transcribe(np.zeros(16000, np.float32), language="en")[0])  # warm up
+from kb import kb_load, kb_answer
+KB_PATH = os.environ.get("KB_PATH", os.path.expanduser("~/bhavna-stt/kuiklo_kb.md"))
+print("kb chunks", kb_load(KB_PATH), flush=True)
 print("ready", flush=True)
 
 
@@ -52,12 +57,23 @@ class H(BaseHTTPRequestHandler):
         self._json(200 if self.path == "/health" else 404, {"ok": self.path == "/health"})
 
     def do_POST(self):
-        if self.path != "/transcribe":
+        if self.path not in ("/transcribe", "/ask"):
             return self._json(404, {"error": "not found"})
         n = int(self.headers.get("Content-Length", "0"))
         if n <= 0 or n > MAX_BYTES:
             return self._json(400, {"error": f"bad length {n}"})
         data = self.rfile.read(n)
+        if self.path == "/ask":
+            try:
+                q = str(json.loads(data).get("question", "")).strip()[:500]
+            except Exception:
+                return self._json(400, {"error": "bad json"})
+            if not q:
+                return self._json(400, {"error": "empty question"})
+            t0 = time.time()
+            out = kb_answer(q)
+            out["seconds"] = round(time.time() - t0, 2)
+            return self._json(200, out)
         t0 = time.time()
         try:
             text = transcribe(data)

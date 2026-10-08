@@ -48,6 +48,12 @@ try {
   if (!Array.isArray(items)) items = [];
 } catch (e) { items = []; }
 return [{ json: { ...base, llm_items: items, llm_model: r.model || null } }];`,
+  kbReply: `// FAQ answer from the KB service replaces the fallback text. Keep the fallback if the service gave nothing.
+const base = $('Order brain').first().json;
+const r = $input.first().json;
+const answer = (r.answer || '').trim();
+const text = answer ? answer + (r.model ? '' : '') : base.text;
+return [{ json: { ...base, text, kb_score: r.score, kb_model: r.model, kb_query: undefined } }];`,
   brain: `${brainSrc}
 const cfg = $('Config').first().json;
 const store = $getWorkflowStaticData('global');
@@ -65,6 +71,7 @@ const nodes = [
     { id: 'c3', name: 'handling_fee_inr', type: 'number', value: 5 },
     { id: 'c4', name: 'swap_window_s', type: 'number', value: 60 },
     { id: 'c5', name: 'stt_url', type: 'string', value: 'http://127.0.0.1:8787/transcribe' },
+    { id: 'c9', name: 'kb_url', type: 'string', value: 'http://127.0.0.1:8787/ask' },
     { id: 'c6', name: 'use_llm_fallback', type: 'boolean', value: true },
     { id: 'c7', name: 'llm_model', type: 'string', value: 'meta-llama/llama-3.3-70b-instruct:free' },
     { id: 'c8', name: 'catalog_json', type: 'string', value: JSON.stringify(catalog) },
@@ -86,7 +93,11 @@ const nodes = [
   { role: 'user', content: $json.text } ] }) }}`, options: { timeout: 30000 } }, credentials: OPENROUTER },
   { name: 'Parse LLM', type: 'n8n-nodes-base.code', typeVersion: 2, position: [1520, 160], parameters: { jsCode: code.parseLlm } },
   { name: 'Order brain', type: 'n8n-nodes-base.code', typeVersion: 2, position: [1740, 300], parameters: { jsCode: code.brain } },
-  { name: 'Telegram: send', type: 'n8n-nodes-base.telegram', typeVersion: 1.2, position: [1960, 300], parameters: { chatId: '={{ $json.chat_id }}', text: '={{ $json.text }}',
+  { name: 'FAQ question?', type: 'n8n-nodes-base.if', typeVersion: 2.2, position: [1960, 300], parameters: { options: {}, conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 }, combinator: 'and',
+    conditions: [{ id: 'f1', operator: { type: 'string', operation: 'notEmpty', singleValue: true }, leftValue: '={{ $json.kb_query || "" }}', rightValue: '' }] } } },
+  { name: 'KB ask (MiniLM + Ollama)', type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [2180, 160], parameters: { method: 'POST', url: "={{ $('Config').first().json.kb_url }}", sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify({ question: $json.kb_query }) }}', options: { timeout: 90000 } } },
+  { name: 'KB reply', type: 'n8n-nodes-base.code', typeVersion: 2, position: [2400, 160], parameters: { jsCode: code.kbReply } },
+  { name: 'Telegram: send', type: 'n8n-nodes-base.telegram', typeVersion: 1.2, position: [2620, 300], parameters: { chatId: '={{ $json.chat_id }}', text: '={{ $json.text }}',
     replyMarkup: '={{ $json.keyboard ? "inlineKeyboard" : "none" }}', inlineKeyboard: '={{ $json.keyboard || {} }}',
     additionalFields: { appendAttribution: false, parse_mode: 'HTML', disable_web_page_preview: true } }, credentials: TG },
   { name: 'Telegram: ack button', type: 'n8n-nodes-base.telegram', typeVersion: 1.2, position: [1960, 500], parameters: { resource: 'callback', operation: 'answerQuery', queryId: "={{ $('Order brain').first().json.callback_query_id }}", additionalFields: {} }, credentials: TG },
@@ -94,7 +105,8 @@ const nodes = [
     conditions: [{ id: 'b1', operator: { type: 'string', operation: 'notEmpty', singleValue: true }, leftValue: "={{ $('Order brain').first().json.callback_query_id }}", rightValue: '' }] } } },
 ];
 // positions fix for ack after Button press?
-nodes.find(n => n.name === 'Telegram: ack button').position = [2400, 300];
+nodes.find(n => n.name === 'Telegram: ack button').position = [3060, 300];
+nodes.find(n => n.name === 'Button press?').position = [2840, 300];
 
 const main = (a, b, i = 0) => ({ [a]: { main: Object.assign([], { [i]: [{ node: b, type: 'main', index: 0 }] }) } });
 const connections = {};
@@ -113,7 +125,11 @@ link('Needs LLM?', 'OpenRouter extract', 0);     // true
 link('Needs LLM?', 'Order brain', 1);            // false
 link('OpenRouter extract', 'Parse LLM');
 link('Parse LLM', 'Order brain');
-link('Order brain', 'Telegram: send');
+link('Order brain', 'FAQ question?');
+link('FAQ question?', 'KB ask (MiniLM + Ollama)', 0); // true: free text that is not an order
+link('FAQ question?', 'Telegram: send', 1);           // false: normal bot message
+link('KB ask (MiniLM + Ollama)', 'KB reply');
+link('KB reply', 'Telegram: send');
 link('Telegram: send', 'Button press?');
 link('Button press?', 'Telegram: ack button', 0); // true
 for (const [k, v] of Object.entries(connections)) for (let i = 0; i < v.main.length; i++) v.main[i] = v.main[i] || [];
