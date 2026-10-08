@@ -132,9 +132,9 @@ function answerQuestion(text, s, catalog, cfg, now) {
   if (/stock|bache|bacha|kitne hain store|available kitn/.test(t)) return 'Stock ki jaankari main nahi de sakta.';
   if (/brand|option|variety|kaun ?se/.test(t)) { const p = tokens(t).map(productOf).find(Boolean); if (p) { const b = brandsFor(catalog, p); return b.length ? `${cap(p)} ke brand options (demo catalog):\n` + b.map(r => `• ${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`).join('\n') : `${cap(p)} abhi catalog mein nahi hai.`; } }
   const has = s.items.length > 0;
-  if (/kitne item|items? kitn|kya kya hai|list/.test(t)) return has ? `Aapke order mein ${s.items.length} item hain:\n` + s.items.map(itemLine).join('\n') : 'Abhi koi order nahi hai. Voice note ya text bhej kar order karein.';
-  if (/total|kitna (paisa|hua|bill)|amount/.test(t)) return has ? `Total: ${money(price(s, cfg).total)} (demo values, COD)` : 'Abhi koi order nahi hai.';
-  if (/delivery|kab aayega|kab milega/.test(t)) return has && s.delivery.date ? `📦 Delivery: ${hinDate(s.delivery.date, now)}, ${s.delivery.slot || '?'} slot` : 'Abhi koi order nahi hai.';
+  if (/kitne item|items? kitn|kya kya hai|list/.test(t)) return has ? `Aapke order mein ${s.items.length} item hain:\n` + s.items.map(itemLine).join('\n') : null;
+  if (/total|kitna (paisa|hua|bill)|amount/.test(t)) return has ? `Total: ${money(price(s, cfg).total)} (demo values, COD)` : null;
+  if (/delivery|kab aayega|kab milega/.test(t)) return has && s.delivery.date ? `📦 Delivery: ${hinDate(s.delivery.date, now)}, ${s.delivery.slot || '?'} slot` : null; // no order -> the FAQ bot answers
   return null;
 }
 
