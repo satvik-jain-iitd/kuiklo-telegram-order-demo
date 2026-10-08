@@ -73,7 +73,7 @@ const nodes = [
     { id: 'c5', name: 'stt_url', type: 'string', value: 'http://127.0.0.1:8787/transcribe' },
     { id: 'c9', name: 'kb_url', type: 'string', value: 'http://127.0.0.1:8787/ask' },
     { id: 'c6', name: 'use_llm_fallback', type: 'boolean', value: true },
-    { id: 'c7', name: 'llm_model', type: 'string', value: 'meta-llama/llama-3.3-70b-instruct:free' },
+    { id: 'c7', name: 'llm_model', type: 'string', value: 'google/gemma-4-26b-a4b-it:free' },
     { id: 'c8', name: 'catalog_json', type: 'string', value: JSON.stringify(catalog) },
   ] } } },
   { name: 'Kill switch?', type: 'n8n-nodes-base.if', typeVersion: 2.2, position: [-460, 300], parameters: { options: {}, conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2 }, combinator: 'and',
@@ -90,7 +90,7 @@ const nodes = [
   { name: 'OpenRouter extract', type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [1300, 160], parameters: { method: 'POST', url: 'https://openrouter.ai/api/v1/chat/completions', authentication: 'predefinedCredentialType', nodeCredentialType: 'openRouterApi', sendBody: true, specifyBody: 'json',
     jsonBody: `={{ JSON.stringify({ model: $('Config').first().json.llm_model, temperature: 0, max_tokens: 300, messages: [
   { role: 'system', content: 'You extract grocery order items from Hinglish text. Known products: atta, roti, bhindi, aloo, pyaaz, tamatar, doodh, dahi, chawal, dal, cheeni, tel, namak, ande, bread. Reply with ONLY a JSON array like [{"product":"atta","qty":1,"unit":"kg"}]. Map synonyms to the known product names. qty null if not said. unit is kg or pcs. Empty array if no order.' },
-  { role: 'user', content: $json.text } ] }) }}`, options: { timeout: 30000 } }, credentials: OPENROUTER },
+  { role: 'user', content: $json.text } ] }) }}`, options: { timeout: 30000 } }, credentials: OPENROUTER, onError: 'continueRegularOutput' },
   { name: 'Parse LLM', type: 'n8n-nodes-base.code', typeVersion: 2, position: [1520, 160], parameters: { jsCode: code.parseLlm } },
   { name: 'Order brain', type: 'n8n-nodes-base.code', typeVersion: 2, position: [1740, 300], parameters: { jsCode: code.brain } },
   { name: 'FAQ question?', type: 'n8n-nodes-base.if', typeVersion: 2.2, position: [1960, 300], parameters: { options: {}, conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 }, combinator: 'and',
