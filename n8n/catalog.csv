@@ -73,3 +73,126 @@ KEL-001,kela,Farm Fresh,Dozen,pcs,50,fruits,1
 SEB-001,seb,Farm Fresh,Shimla Apple,kg,160,fruits,1
 AAM-001,aam,Farm Fresh,Malda Mango,kg,120,fruits,0
 PPT-001,papita,Farm Fresh,Loose,kg,45,fruits,1
+ATA-005,atta,Sudha,Chakki Atta,kg,46,staples,1
+CHA-005,chawal,Kohinoor,Super Basmati,kg,110,staples,1
+CHA-006,chawal,Local,Katarni (Bihar),kg,90,staples,1
+CHA-007,chawal,Fortune,Everyday Basmati,kg,88,staples,1
+DAL-004,dal,Patanjali,Toor (Arhar),kg,145,staples,1
+MNG-003,moong dal,Patanjali,Moong Dhuli,kg,130,staples,1
+URD-001,urad dal,Tata Sampann,Urad Dhuli,kg,150,staples,1
+URD-002,urad dal,Local,Urad Sabut,kg,135,staples,1
+RJM-001,rajma,Tata Sampann,Rajma Chitra,kg,170,staples,1
+RJM-002,rajma,Local,Rajma Red loose,kg,150,staples,1
+CHL-001,chole,Tata Sampann,Kabuli Chana,kg,140,staples,1
+CHL-002,chole,Local,Kabuli Chana loose,kg,120,staples,1
+STU-001,sattu,Sattuz,Chana Sattu 500 g,pcs,65,staples,1
+STU-002,sattu,Local,Chana Sattu loose,kg,110,staples,1
+MDA-001,maida,Aashirvaad,Maida 1 kg,pcs,50,staples,1
+SOY-001,soya chunks,Nutrela,Soya Chunks 200 g,pcs,55,staples,1
+DLY-001,daliya,Aashirvaad,Daliya 500 g,pcs,45,staples,1
+HLD-001,haldi,MDH,Haldi Powder 100 g,pcs,38,masala,1
+HLD-002,haldi,Everest,Haldi Powder 100 g,pcs,36,masala,1
+MRP-001,mirch powder,MDH,Lal Mirch 100 g,pcs,45,masala,1
+MRP-002,mirch powder,Everest,Tikhalal 100 g,pcs,48,masala,1
+DHP-001,dhaniya powder,MDH,Dhania Powder 100 g,pcs,40,masala,1
+GRM-001,garam masala,MDH,Garam Masala 100 g,pcs,85,masala,1
+GRM-002,garam masala,Everest,Garam Masala 100 g,pcs,82,masala,1
+JRA-001,jeera,Tata Sampann,Jeera 100 g,pcs,55,masala,1
+JRA-002,jeera,Local,Jeera loose,kg,420,masala,1
+SRS-001,sarson,Local,Sarson (Mustard seed) loose,kg,95,masala,1
+PNM-001,panch phoran,Local,Panch Phoran 100 g,pcs,30,masala,1
+CHM-001,chaat masala,MDH,Chunky Chaat 100 g,pcs,52,masala,1
+AMC-001,amchur,Everest,Amchur 100 g,pcs,48,masala,1
+TEL-005,tel,Fortune,Kachi Ghani Mustard 1 L,pcs,160,staples,1
+TEL-006,tel,Dalda,Vanaspati 1 L,pcs,135,staples,0
+GHE-003,ghee,Patanjali,Cow Ghee 500 ml,pcs,330,dairy,1
+DUD-004,doodh,Sudha,Gold Full Cream 500 ml,pcs,32,dairy,1
+DUD-005,doodh,Sudha,Cow Milk 500 ml,pcs,30,dairy,1
+DUD-006,doodh,Mother Dairy,Toned 500 ml,pcs,27,dairy,1
+DHI-003,dahi,Sudha,Mishti Dahi 200 g,pcs,30,dairy,1
+PNR-003,paneer,Mother Dairy,Paneer 200 g,pcs,82,dairy,1
+CHZ-001,cheese,Amul,Cheese Slices 200 g,pcs,135,dairy,1
+CHZ-002,cheese,Britannia,Cheese Cubes 200 g,pcs,130,dairy,1
+LSI-001,lassi,Sudha,Sweet Lassi 200 ml,pcs,20,dairy,1
+AND-003,ande,Farm Fresh,30 pcs tray,pcs,210,dairy,1
+BRD-004,bread,Harvest Gold,Sandwich Bread 600 g,pcs,55,bakery,1
+BRD-005,bread,Local,Pav 6 pcs,pcs,30,bakery,1
+RSK-001,rusk,Britannia,Toast Rusk 300 g,pcs,45,bakery,1
+CHY-004,chai,Tata Tea,Gold 250 g,pcs,165,beverages,1
+CHY-005,chai,Wagh Bakri,Premium 250 g,pcs,150,beverages,1
+CFE-001,coffee,Nescafe,Classic 50 g,pcs,160,beverages,1
+CFE-002,coffee,Bru,Instant 50 g,pcs,120,beverages,1
+CLD-001,cold drink,Coca-Cola,750 ml,pcs,40,beverages,1
+CLD-002,cold drink,Thums Up,750 ml,pcs,40,beverages,1
+CLD-003,cold drink,Sprite,750 ml,pcs,40,beverages,1
+JUS-001,juice,Real,Mixed Fruit 1 L,pcs,120,beverages,1
+JUS-002,juice,Tropicana,Orange 1 L,pcs,130,beverages,1
+PNI-001,pani,Bisleri,1 L,pcs,20,beverages,1
+PNI-002,pani,Kinley,1 L,pcs,20,beverages,1
+HRL-001,horlicks,Horlicks,Classic 500 g,pcs,260,beverages,1
+BRN-001,bournvita,Cadbury,Bournvita 500 g,pcs,240,beverages,1
+BIS-004,biscuit,Parle,Hide and Seek 200 g,pcs,40,snacks,1
+BIS-005,biscuit,Sunfeast,Dark Fantasy 300 g,pcs,110,snacks,1
+BIS-006,biscuit,Britannia,50-50 Maska Chaska 250 g,pcs,35,snacks,1
+CHP-001,chips,Lay's,Magic Masala 50 g,pcs,20,snacks,1
+CHP-002,chips,Kurkure,Masala Munch 90 g,pcs,20,snacks,1
+CHP-003,chips,Bingo,Mad Angles 66 g,pcs,20,snacks,1
+NMK-004,namkeen,Haldiram,Moong Dal 400 g,pcs,90,snacks,1
+NMK-005,namkeen,Bikaji,Bhujia 400 g,pcs,92,snacks,1
+CHC-001,chocolate,Cadbury,Dairy Milk 50 g,pcs,45,snacks,1
+CHC-002,chocolate,Nestle,KitKat 4 finger,pcs,35,snacks,1
+MGI-002,maggi,Nestle,Maggi Masala 4 pack,pcs,56,snacks,1
+PST-001,pasta,Maggi,Pazzta Masala 70 g,pcs,30,snacks,1
+KTC-001,ketchup,Kissan,Tomato Ketchup 500 g,pcs,110,grocery,1
+JAM-001,jam,Kissan,Mixed Fruit 500 g,pcs,150,grocery,1
+ACH-001,achar,Mother's Recipe,Mango Pickle 500 g,pcs,120,grocery,1
+ACH-002,achar,Priya,Mixed Pickle 300 g,pcs,95,grocery,1
+SHD-001,shahad,Dabur,Honey 250 g,pcs,120,grocery,1
+PAP-001,papad,Lijjat,Urad Papad 200 g,pcs,65,grocery,1
+SVY-001,sewai,Bambino,Vermicelli 400 g,pcs,45,grocery,1
+KJU-001,kaju,Local,Cashew W320,kg,850,dry fruits,1
+BDM-001,badam,Local,Almond California,kg,780,dry fruits,1
+KSM-001,kishmish,Local,Raisin,kg,320,dry fruits,1
+MKN-001,makhana,Local,Phool Makhana (Bihar),kg,650,dry fruits,1
+SBN-003,sabun,Lux,Rose 100 g x4,pcs,110,household,1
+SBN-004,sabun,Santoor,Sandal 100 g x4,pcs,105,household,1
+SRF-003,surf,Ariel,Matic 1 kg,pcs,220,household,1
+SRF-004,surf,Ghadi,Detergent 1 kg,pcs,75,household,1
+DSH-001,dishwash,Vim,Bar 200 g x3,pcs,45,household,1
+DSH-002,dishwash,Vim,Liquid 500 ml,pcs,110,household,1
+HRP-001,harpic,Harpic,Power Plus 500 ml,pcs,95,household,1
+PHN-001,phenyl,Lizol,Floor Cleaner 500 ml,pcs,105,household,1
+MCS-001,machis,Homelite,Matchbox 10 pack,pcs,20,household,1
+AGB-001,agarbatti,Cycle,Three in One 100 sticks,pcs,60,household,1
+MSQ-001,mosquito coil,Good Knight,Coil 10 pack,pcs,45,household,1
+TTP-001,toothpaste,Colgate,Strong Teeth 200 g,pcs,110,personal care,1
+TTP-002,toothpaste,Dabur,Red 200 g,pcs,105,personal care,1
+TTB-001,toothbrush,Colgate,Zigzag 1 pc,pcs,30,personal care,1
+SHP-001,shampoo,Clinic Plus,Strong 340 ml,pcs,175,personal care,1
+SHP-002,shampoo,Dove,Daily Shine 340 ml,pcs,290,personal care,1
+HRO-001,hair oil,Parachute,Coconut 250 ml,pcs,120,personal care,1
+HRO-002,hair oil,Dabur,Amla 275 ml,pcs,135,personal care,1
+PAD-001,sanitary pad,Whisper,Ultra Clean XL 15,pcs,180,personal care,1
+PAD-002,sanitary pad,Stayfree,Secure XL 20,pcs,160,personal care,1
+DPR-001,diaper,Pampers,Pants M 20,pcs,420,baby care,1
+DPR-002,diaper,MamyPoko,Pants M 20,pcs,400,baby care,1
+BNG-001,baingan,Farm Fresh,Loose,kg,32,vegetables,1
+KRL-001,karela,Farm Fresh,Loose,kg,45,vegetables,1
+MTR-001,matar,Farm Fresh,Loose,kg,70,vegetables,1
+GJR-001,gajar,Farm Fresh,Loose,kg,40,vegetables,1
+BNS-001,beans,Farm Fresh,Loose,kg,55,vegetables,1
+PGB-001,patta gobhi,Farm Fresh,Loose,kg,25,vegetables,1
+MLI-001,mooli,Farm Fresh,Loose,kg,22,vegetables,1
+KDU-001,kaddu,Farm Fresh,Loose,kg,24,vegetables,1
+PRW-001,parwal,Farm Fresh,Loose (Bihar),kg,50,vegetables,1
+NNA-001,nenua,Farm Fresh,Loose (Bihar),kg,35,vegetables,1
+SKK-001,shakarkand,Farm Fresh,Loose,kg,40,vegetables,1
+MTI-001,methi,Farm Fresh,Bunch 250 g,pcs,15,vegetables,1
+PDN-001,pudina,Farm Fresh,Bunch 100 g,pcs,10,vegetables,1
+SNT-001,santra,Farm Fresh,Nagpur Orange,kg,80,fruits,1
+ANR-001,anar,Farm Fresh,Loose,kg,150,fruits,1
+AGR-001,angoor,Farm Fresh,Green Grapes,kg,90,fruits,1
+AMR-001,amrood,Farm Fresh,Loose,kg,60,fruits,1
+TRB-001,tarbooz,Farm Fresh,Loose,kg,25,fruits,0
+NSP-001,nashpati,Farm Fresh,Loose,kg,110,fruits,1
+LCH-001,litchi,Farm Fresh,Muzaffarpur Shahi,kg,140,fruits,0

@@ -22,10 +22,27 @@ const ALIASES = { atta: ['atta', 'aata', 'flour'], roti: ['roti', 'rotiyan', 'ro
   surf: ['surf', 'detergent', 'washing_powder'], gobhi: ['gobhi', 'gobi', 'cauliflower', 'phool_gobhi'], palak: ['palak', 'spinach'], dhaniya: ['dhaniya', 'dhania', 'coriander'],
   mirch: ['mirch', 'mirchi', 'hari_mirch', 'chilli', 'chillies'], adrak: ['adrak', 'ginger'], lehsun: ['lehsun', 'lahsun', 'lasun', 'garlic'], nimbu: ['nimbu', 'lemon', 'neembu'],
   kheera: ['kheera', 'khira', 'cucumber'], lauki: ['lauki', 'louki', 'ghiya', 'bottle_gourd'], 'shimla mirch': ['shimla_mirch', 'capsicum'], kela: ['kela', 'kele', 'banana', 'bananas'],
-  seb: ['seb', 'apple', 'apples'], aam: ['aam', 'mango', 'mangoes'], papita: ['papita', 'papaya'] };
+  seb: ['seb', 'apple', 'apples'], aam: ['aam', 'mango', 'mangoes'], papita: ['papita', 'papaya'],
+  'urad dal': ['urad_dal', 'urad'], rajma: ['rajma', 'kidney_beans'], chole: ['chole', 'chhole', 'kabuli_chana', 'chana'], sattu: ['sattu'], maida: ['maida'], 'soya chunks': ['soya_chunks', 'soya', 'nutrela'],
+  daliya: ['daliya', 'dalia'], haldi: ['haldi', 'turmeric'], 'mirch powder': ['mirch_powder', 'lal_mirch', 'chilli_powder'], 'dhaniya powder': ['dhaniya_powder', 'dhania_powder'], 'garam masala': ['garam_masala'],
+  jeera: ['jeera', 'cumin', 'zeera'], sarson: ['sarson', 'rai'], 'panch phoran': ['panch_phoran', 'panchphoran'], 'chaat masala': ['chaat_masala', 'chat_masala'], amchur: ['amchur', 'amchoor'],
+  cheese: ['cheese'], lassi: ['lassi'], rusk: ['rusk', 'toast'], coffee: ['coffee', 'nescafe', 'bru'], 'cold drink': ['cold_drink', 'colddrink', 'coke', 'pepsi', 'thumsup', 'thums_up', 'sprite', 'coca_cola'],
+  juice: ['juice'], pani: ['pani', 'water', 'bisleri', 'paani'], horlicks: ['horlicks'], bournvita: ['bournvita'], chips: ['chips', 'lays', 'kurkure', 'bingo'], chocolate: ['chocolate', 'dairy_milk', 'kitkat', 'chaklet'],
+  pasta: ['pasta', 'pazzta'], ketchup: ['ketchup', 'sauce'], jam: ['jam'], achar: ['achar', 'pickle', 'aachar'], shahad: ['shahad', 'honey', 'shehad'], papad: ['papad'], sewai: ['sewai', 'seviyan', 'vermicelli'],
+  kaju: ['kaju', 'cashew'], badam: ['badam', 'almond', 'almonds'], kishmish: ['kishmish', 'raisin', 'raisins'], makhana: ['makhana', 'makhane'], dishwash: ['dishwash', 'vim'], harpic: ['harpic', 'toilet_cleaner'],
+  phenyl: ['phenyl', 'lizol', 'floor_cleaner'], machis: ['machis', 'matchbox', 'maachis'], agarbatti: ['agarbatti', 'incense'], 'mosquito coil': ['mosquito_coil', 'coil', 'goodknight', 'good_knight'],
+  toothpaste: ['toothpaste', 'colgate', 'manjan'], toothbrush: ['toothbrush', 'brush'], shampoo: ['shampoo'], 'hair oil': ['hair_oil', 'parachute'], 'sanitary pad': ['sanitary_pad', 'pads', 'whisper', 'stayfree'],
+  diaper: ['diaper', 'diapers', 'pampers', 'mamypoko'], baingan: ['baingan', 'brinjal', 'bhanta'], karela: ['karela'], matar: ['matar', 'peas'], gajar: ['gajar', 'carrot'], beans: ['beans', 'sem'],
+  'patta gobhi': ['patta_gobhi', 'cabbage', 'bandh_gobhi'], mooli: ['mooli', 'radish'], kaddu: ['kaddu', 'pumpkin', 'kohda'], parwal: ['parwal', 'parval'], nenua: ['nenua', 'turai', 'tori'], shakarkand: ['shakarkand', 'sweet_potato'],
+  methi: ['methi'], pudina: ['pudina', 'mint'], santra: ['santra', 'orange', 'narangi'], anar: ['anar', 'pomegranate'], angoor: ['angoor', 'grapes'], amrood: ['amrood', 'guava'], tarbooz: ['tarbooz', 'watermelon'],
+  nashpati: ['nashpati', 'pear'], litchi: ['litchi', 'lichi'] };
 // two-word product names are joined before tokenizing so they match one alias
 const BIGRAMS = [['moong dal', 'moong_dal'], ['mung dal', 'moong_dal'], ['chana dal', 'chana_dal'], ['masoor dal', 'masoor_dal'], ['arhar dal', 'dal'], ['toor dal', 'dal'], ['tur dal', 'dal'],
-  ['shimla mirch', 'shimla_mirch'], ['hari mirch', 'hari_mirch'], ['phool gobhi', 'phool_gobhi'], ['double roti', 'double_roti'], ['chai patti', 'chai_patti'], ['parle g', 'parle_g'], ['washing powder', 'washing_powder'], ['bottle gourd', 'bottle_gourd']];
+  ['shimla mirch', 'shimla_mirch'], ['hari mirch', 'hari_mirch'], ['phool gobhi', 'phool_gobhi'], ['double roti', 'double_roti'], ['chai patti', 'chai_patti'], ['parle g', 'parle_g'], ['washing powder', 'washing_powder'], ['bottle gourd', 'bottle_gourd'],
+  ['urad dal', 'urad_dal'], ['kabuli chana', 'kabuli_chana'], ['soya chunks', 'soya_chunks'], ['lal mirch', 'lal_mirch'], ['mirch powder', 'mirch_powder'], ['chilli powder', 'chilli_powder'], ['dhaniya powder', 'dhaniya_powder'], ['dhania powder', 'dhania_powder'],
+  ['garam masala', 'garam_masala'], ['panch phoran', 'panch_phoran'], ['chaat masala', 'chaat_masala'], ['chat masala', 'chat_masala'], ['cold drink', 'cold_drink'], ['thums up', 'thums_up'], ['coca cola', 'coca_cola'], ['dairy milk', 'dairy_milk'],
+  ['toilet cleaner', 'toilet_cleaner'], ['floor cleaner', 'floor_cleaner'], ['mosquito coil', 'mosquito_coil'], ['good knight', 'good_knight'], ['hair oil', 'hair_oil'], ['sanitary pad', 'sanitary_pad'], ['sanitary pads', 'sanitary_pad'],
+  ['patta gobhi', 'patta_gobhi'], ['bandh gobhi', 'bandh_gobhi'], ['sweet potato', 'sweet_potato'], ['kidney beans', 'kidney_beans']];
 const STOP = new Set(['aur', 'and', 'ka', 'ki', 'ke', 'ko', 'se', 'mein', 'me', 'chahiye', 'chaiye', 'bhej', 'do', 'dena', 'order', 'please', 'plz',
   'mujhe', 'muje', 'hai', 'ho', 'kar', 'karo', 'dijiye', 'le', 'lo', 'ek', 'bhi', 'sath', 'saath', 'wala', 'wali', 'the', 'a', 'of', 'with', 'for', 'ja', 'jao',
   'kal', 'aaj', 'parso', 'subah', 'morning', 'shaam', 'sham', 'evening', 'delivery', 'deliver', 'ghar', 'par', 'pe', 'kilo', 'kg', 'gram', 'g', 'pcs', 'piece', 'pieces', 'packet', 'pack', 'litre', 'liter', 'l', 'ltr', 'dozen', 'hona', 'chahie', 'den', 'dedo', 'bhejo', 'hello', 'hi', 'namaste']);
@@ -125,7 +142,13 @@ const HINDI = { atta: 'आटा', chawal: 'चावल', roti: 'रोटी',
   'moong dal': 'मूंग दाल', 'chana dal': 'चना दाल', 'masoor dal': 'मसूर दाल', suji: 'सूजी', besan: 'बेसन', poha: 'पोहा', cheeni: 'चीनी', namak: 'नमक', tel: 'तेल', ghee: 'घी',
   paneer: 'पनीर', makhan: 'मक्खन', ande: 'अंडे', bread: 'ब्रेड', chai: 'चाय', biscuit: 'बिस्कुट', maggi: 'मैगी', namkeen: 'नमकीन', sabun: 'साबुन', surf: 'सर्फ़', gobhi: 'गोभी',
   palak: 'पालक', dhaniya: 'धनिया', mirch: 'मिर्च', adrak: 'अदरक', lehsun: 'लहसुन', nimbu: 'नींबू', kheera: 'खीरा', lauki: 'लौकी', 'shimla mirch': 'शिमला मिर्च', kela: 'केला',
-  seb: 'सेब', aam: 'आम', papita: 'पपीता' };
+  seb: 'सेब', aam: 'आम', papita: 'पपीता', 'urad dal': 'उड़द दाल', rajma: 'राजमा', chole: 'छोले', sattu: 'सत्तू', maida: 'मैदा', 'soya chunks': 'सोया चंक्स', daliya: 'दलिया', haldi: 'हल्दी',
+  'mirch powder': 'मिर्च पाउडर', 'dhaniya powder': 'धनिया पाउडर', 'garam masala': 'गरम मसाला', jeera: 'जीरा', sarson: 'सरसों', 'panch phoran': 'पंच फोरन', 'chaat masala': 'चाट मसाला', amchur: 'अमचूर',
+  cheese: 'चीज़', lassi: 'लस्सी', rusk: 'रस्क', coffee: 'कॉफ़ी', 'cold drink': 'कोल्ड ड्रिंक', juice: 'जूस', pani: 'पानी', horlicks: 'हॉर्लिक्स', bournvita: 'बॉर्नविटा', chips: 'चिप्स', chocolate: 'चॉकलेट',
+  pasta: 'पास्ता', ketchup: 'केचप', jam: 'जैम', achar: 'अचार', shahad: 'शहद', papad: 'पापड़', sewai: 'सेवई', kaju: 'काजू', badam: 'बादाम', kishmish: 'किशमिश', makhana: 'मखाना', dishwash: 'डिशवॉश',
+  harpic: 'हार्पिक', phenyl: 'फिनाइल', machis: 'माचिस', agarbatti: 'अगरबत्ती', 'mosquito coil': 'मच्छर कॉइल', toothpaste: 'टूथपेस्ट', toothbrush: 'टूथब्रश', shampoo: 'शैम्पू', 'hair oil': 'हेयर ऑयल',
+  'sanitary pad': 'सैनिटरी पैड', diaper: 'डायपर', baingan: 'बैंगन', karela: 'करेला', matar: 'मटर', gajar: 'गाजर', beans: 'बीन्स', 'patta gobhi': 'पत्ता गोभी', mooli: 'मूली', kaddu: 'कद्दू', parwal: 'परवल',
+  nenua: 'नेनुआ', shakarkand: 'शकरकंद', methi: 'मेथी', pudina: 'पुदीना', santra: 'संतरा', anar: 'अनार', angoor: 'अंगूर', amrood: 'अमरूद', tarbooz: 'तरबूज़', nashpati: 'नाशपाती', litchi: 'लीची' };
 const hi = p => HINDI[p] || p;
 let CATALOG = []; // set per brain() call so ask() can list brands
 // ---- state machine ----
@@ -279,4 +302,4 @@ function brain(update, store, cfg, now) {
   return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s };
 }
 
-if (typeof module !== 'undefined' && module && module.exports) module.exports = { brain, extract, loadCatalog, price, summary, maskPhone, answerQuestion };
+if (typeof module !== 'undefined' && module && module.exports) module.exports = { brain, extract, loadCatalog, price, summary, maskPhone, answerQuestion, ALIASES, HINDI };
