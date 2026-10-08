@@ -73,7 +73,7 @@ const nodes = [
     { id: 'c5', name: 'stt_url', type: 'string', value: 'http://127.0.0.1:8787/transcribe' },
     { id: 'c9', name: 'kb_url', type: 'string', value: 'http://127.0.0.1:8787/ask' },
     { id: 'c6', name: 'use_llm_fallback', type: 'boolean', value: true },
-    { id: 'c7', name: 'llm_model', type: 'string', value: 'google/gemma-4-26b-a4b-it:free' },
+    { id: 'c7', name: 'llm_model', type: 'string', value: 'deepseek/deepseek-v3.2' },
     { id: 'c8', name: 'catalog_json', type: 'string', value: JSON.stringify(catalog) },
   ] } } },
   { name: 'Kill switch?', type: 'n8n-nodes-base.if', typeVersion: 2.2, position: [-460, 300], parameters: { options: {}, conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2 }, combinator: 'and',
