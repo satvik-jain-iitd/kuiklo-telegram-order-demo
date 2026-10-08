@@ -72,6 +72,9 @@ const nodes = [
     { id: 'c4', name: 'swap_window_s', type: 'number', value: 60 },
     { id: 'c5', name: 'stt_url', type: 'string', value: 'http://127.0.0.1:8787/transcribe' },
     { id: 'c9', name: 'kb_url', type: 'string', value: 'http://127.0.0.1:8787/ask' },
+    { id: 'c10', name: 'voice_url', type: 'string', value: 'http://127.0.0.1:8787/voice' },
+    { id: 'c11', name: 'voice_enabled', type: 'boolean', value: true },
+    { id: 'c12', name: 'greeting_text', type: 'string', value: 'Namaste. Kuiklo use karne ke liye thank you. Main founder aur CEO Shyam Gupta. Bataiye, aapki kaise madad kar sakta hoon?' },
     { id: 'c6', name: 'use_llm_fallback', type: 'boolean', value: true },
     { id: 'c7', name: 'llm_model', type: 'string', value: 'deepseek/deepseek-v3.2' },
     { id: 'c8', name: 'catalog_json', type: 'string', value: JSON.stringify(catalog) },
@@ -97,7 +100,11 @@ const nodes = [
     conditions: [{ id: 'f1', operator: { type: 'string', operation: 'notEmpty', singleValue: true }, leftValue: '={{ $json.kb_query || "" }}', rightValue: '' }] } } },
   { name: 'KB ask (MiniLM + Ollama)', type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [2180, 160], parameters: { method: 'POST', url: "={{ $('Config').first().json.kb_url }}", sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify({ question: $json.kb_query }) }}', options: { timeout: 90000 } } },
   { name: 'KB reply', type: 'n8n-nodes-base.code', typeVersion: 2, position: [2400, 160], parameters: { jsCode: code.kbReply } },
-  { name: 'Telegram: send', type: 'n8n-nodes-base.telegram', typeVersion: 1.2, position: [2620, 300], parameters: { chatId: '={{ $json.chat_id }}', text: '={{ $json.text }}',
+  { name: 'Voice reply?', type: 'n8n-nodes-base.if', typeVersion: 2.2, position: [2620, 300], parameters: { options: {}, conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 }, combinator: 'and',
+    conditions: [{ id: 'v1', operator: { type: 'boolean', operation: 'true', singleValue: true }, leftValue: "={{ !!$json.voice_text && $('Config').first().json.voice_enabled === true }}", rightValue: '' }] } } },
+  { name: 'Voice note (Sarvam clone)', type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [2840, 160], parameters: { method: 'POST', url: "={{ $('Config').first().json.voice_url }}", sendBody: true, specifyBody: 'json',
+    jsonBody: '={{ JSON.stringify({ chat_id: $json.chat_id, text: $json.voice_text, caption: $json.text, keyboard: $json.keyboard }) }}', options: { timeout: 90000 } }, onError: 'continueErrorOutput' },
+  { name: 'Telegram: send', type: 'n8n-nodes-base.telegram', typeVersion: 1.2, position: [2840, 440], parameters: { chatId: '={{ $json.chat_id }}', text: '={{ $json.text }}',
     // replyMarkup must be a literal: n8n decides whether `inlineKeyboard` is visible from the RAW value, so an expression here hides the keyboard
     replyMarkup: 'inlineKeyboard', inlineKeyboard: '={{ $json.keyboard || { rows: [] } }}',
     additionalFields: { appendAttribution: false, parse_mode: 'HTML', disable_web_page_preview: true } }, credentials: TG },
@@ -128,10 +135,15 @@ link('OpenRouter extract', 'Parse LLM');
 link('Parse LLM', 'Order brain');
 link('Order brain', 'FAQ question?');
 link('FAQ question?', 'KB ask (MiniLM + Ollama)', 0); // true: free text that is not an order
-link('FAQ question?', 'Telegram: send', 1);           // false: normal bot message
+link('FAQ question?', 'Voice reply?', 1);             // false: normal bot message
 link('KB ask (MiniLM + Ollama)', 'KB reply');
-link('KB reply', 'Telegram: send');
+link('KB reply', 'Voice reply?');
+link('Voice reply?', 'Voice note (Sarvam clone)', 0);  // true: short follow-up or greeting -> voice note with caption and buttons
+link('Voice reply?', 'Telegram: send', 1);             // false: text message
+link('Voice note (Sarvam clone)', 'Button press?', 0);  // success
+link('Voice note (Sarvam clone)', 'Telegram: send', 1); // error output: voice failed -> same message as text
 link('Telegram: send', 'Button press?');
+// Telegram: send reads $json from whichever branch fed it; Voice error output still carries text/keyboard/chat_id
 link('Button press?', 'Telegram: ack button', 0); // true
 for (const [k, v] of Object.entries(connections)) for (let i = 0; i < v.main.length; i++) v.main[i] = v.main[i] || [];
 

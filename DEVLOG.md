@@ -67,3 +67,14 @@ Model timing (same 5 questions, 4 CPU, no GPU):
 | what is the capital of France | 0.04 | none (off-topic) | 0.01 | Yeh sawal Kuiklo ke baare mein nahi lag raha. Order, delivery, payment ya refund ke |
 
 Open: scores for Hinglish questions sit at 0.35 to 0.48, near `MIN_SCORE` 0.30. Watch for on-topic questions that fall under 0.30. Owner to pick: 1b (fast, weak) or 4b (slow, good), or qwen2.5:3b as a middle test.
+
+## 2026-10-08 | M5 (P7) | Founder voice replies via Sarvam
+Built:
+- G1: owner states Shyam Gupta allowed the clone. Note saved in `docs/consent/shyam_gupta_voice_consent.md` (private, not committed). His own written note still to be added.
+- `stt/voice.py` + `POST /voice` on the Oracle service: Sarvam `POST /voices/clone` (voice_id, hi-IN, mp3) -> Telegram `sendVoice` with caption "AI-generated voice (Shyam Gupta ki awaaz)" and inline buttons. Audio cached by text hash. Caps: 200 chars per message, 100 voice messages per day. Secrets in `~/bhavna-stt/.env` (0600) on Oracle, never in n8n nodes.
+- Greeting on `/start` (owner's text) is voiced. Follow-up questions (brand, slot, name, phone, area) are voiced. Summary, lists and FAQ answers stay text.
+- Workflow: `Voice reply?` IF -> `Voice note (Sarvam clone)` HTTP; on error the same message goes out as text (`Telegram: send`). 21 nodes.
+Decision:
+- Free tier only: ₹100 credits, ₹3 per 1K chars. Greeting audio pre-seeded in the cache from one test call, so it costs nothing again.
+Failed: none new. Earlier today: inline buttons never reached Telegram because `replyMarkup` was an expression; n8n hides `inlineKeyboard` when the raw value is not the literal `inlineKeyboard`. Fixed with a literal.
+Verified by: 34 unit tests green; `/voice` test from Oracle -> voice bubble with button received in the owner's chat (cached: true, chars 121).

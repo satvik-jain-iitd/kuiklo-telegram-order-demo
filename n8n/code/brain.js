@@ -141,7 +141,7 @@ function nextOrderId(store, now) { const d = fmtDate(now).replace(/-/g, ''); sto
 function understood(s, now) { const lines = ['Maine yeh samjha:', ...s.items.map(it => it.qty === null ? `• ${cap(it.product)} (quantity?)` : itemLine(it))]; if (s.delivery.date) lines.push(`📅 Delivery: ${hinDate(s.delivery.date, now)}`); return lines.join('\n'); }
 function collectOrReview(s, cfg, now, msgs) {
   const m = missing(s);
-  if (m) { s.state = 'COLLECTING'; msgs.push(ask(s, m, now)); return; }
+  if (m) { s.state = 'COLLECTING'; const a = ask(s, m, now); a.voice_text = a.text.replace(/\(.*?\)/g, '').trim(); msgs.push(a); return; }
   s.state = 'REVIEW';
   msgs.push({ text: summary(s, cfg, now), keyboard: kb([[['✅ Confirm order', 'confirm'], ['✏️ Kuch badalna hai', 'edit']], [['❌ Cancel', 'cancel']]]) });
 }
@@ -210,7 +210,7 @@ function brain(update, store, cfg, now) {
 
   // ---- text (typed or transcribed) ----
   if (!text.trim()) { msgs.push({ text: 'Kuch sunai nahi diya. Voice note dobara bhejein ya order type karein.', keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
-  if (/^\/start/.test(text)) { store.sessions[cid] = newSession(cid); msgs.push({ text: '👋 Kuiklo demo bot mein swagat hai!\n\nVoice note ya text bhejein, jaise:\n"1 kg atta, 2 roti, 3 kg bhindi, kal subah"\n\n⚠️ Yeh demo hai. Prices demo values hain.', keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
+  if (/^\/start/.test(text)) { store.sessions[cid] = newSession(cid); msgs.push({ text: '👋 Kuiklo demo bot mein swagat hai!\n\nVoice note ya text bhejein, jaise:\n"1 kg atta, 2 roti, 3 kg bhindi, kal subah"\n\n⚠️ Yeh demo hai. Prices demo values hain.', keyboard: null, voice_text: cfg.greeting_text || '' }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
 
   // collecting a typed answer
   if (s.state === 'COLLECTING') {

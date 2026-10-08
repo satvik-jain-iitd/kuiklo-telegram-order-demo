@@ -7,6 +7,8 @@ temperature 0, no timestamps.
 
 POST /transcribe  body = raw audio bytes (OGG Opus from Telegram, WAV, MP3 ...)
                   -> {"text": "...", "seconds": 3.2}
+POST /voice       body = {"chat_id", "text", "caption", "keyboard"}  (Sarvam clone -> Telegram sendVoice)
+                  -> {"ok": true, "cached": false, "chars": 80}
 POST /ask         body = {"question": "..."}  (Kuiklo FAQ, MiniLM retrieval + local Ollama)
                   -> {"answer": "...", "sources": [...], "score": 0.7, "model": "gemma3:4b"}
 GET  /health      -> {"ok": true}
@@ -31,6 +33,7 @@ model = WhisperModel(MODEL_DIR, device="cpu", compute_type="int8", cpu_threads=4
 import numpy as np
 list(model.transcribe(np.zeros(16000, np.float32), language="en")[0])  # warm up
 from kb import kb_load, kb_answer
+from voice import voice_send
 KB_PATH = os.environ.get("KB_PATH", os.path.expanduser("~/bhavna-stt/kuiklo_kb.md"))
 print("kb chunks", kb_load(KB_PATH), flush=True)
 print("ready", flush=True)
@@ -57,12 +60,22 @@ class H(BaseHTTPRequestHandler):
         self._json(200 if self.path == "/health" else 404, {"ok": self.path == "/health"})
 
     def do_POST(self):
-        if self.path not in ("/transcribe", "/ask"):
+        if self.path not in ("/transcribe", "/ask", "/voice"):
             return self._json(404, {"error": "not found"})
         n = int(self.headers.get("Content-Length", "0"))
         if n <= 0 or n > MAX_BYTES:
             return self._json(400, {"error": f"bad length {n}"})
         data = self.rfile.read(n)
+        if self.path == "/voice":
+            try:
+                b = json.loads(data)
+            except Exception:
+                return self._json(400, {"error": "bad json"})
+            try:
+                out = voice_send(b.get("chat_id"), b.get("text"), b.get("caption"), b.get("keyboard"))
+            except Exception as e:  # Sarvam or Telegram down -> n8n falls back to a text message
+                return self._json(502, {"ok": False, "reason": str(e)[:200]})
+            return self._json(200 if out.get("ok") else 422, out)
         if self.path == "/ask":
             try:
                 q = str(json.loads(data).get("question", "")).strip()[:500]
