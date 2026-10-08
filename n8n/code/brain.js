@@ -120,6 +120,13 @@ function brandIntent(text, s) {
   return s.items.find(it => ps.includes(it.product)) || (s.items.length === 1 ? s.items[0] : null);
 }
 
+// Devanagari names for voice lines (everything sent to Sarvam is Devanagari, owner rule 2026-10-08)
+const HINDI = { atta: 'आटा', chawal: 'चावल', roti: 'रोटी', bhindi: 'भिंडी', aloo: 'आलू', pyaaz: 'प्याज़', tamatar: 'टमाटर', doodh: 'दूध', dahi: 'दही', dal: 'दाल',
+  'moong dal': 'मूंग दाल', 'chana dal': 'चना दाल', 'masoor dal': 'मसूर दाल', suji: 'सूजी', besan: 'बेसन', poha: 'पोहा', cheeni: 'चीनी', namak: 'नमक', tel: 'तेल', ghee: 'घी',
+  paneer: 'पनीर', makhan: 'मक्खन', ande: 'अंडे', bread: 'ब्रेड', chai: 'चाय', biscuit: 'बिस्कुट', maggi: 'मैगी', namkeen: 'नमकीन', sabun: 'साबुन', surf: 'सर्फ़', gobhi: 'गोभी',
+  palak: 'पालक', dhaniya: 'धनिया', mirch: 'मिर्च', adrak: 'अदरक', lehsun: 'लहसुन', nimbu: 'नींबू', kheera: 'खीरा', lauki: 'लौकी', 'shimla mirch': 'शिमला मिर्च', kela: 'केला',
+  seb: 'सेब', aam: 'आम', papita: 'पपीता' };
+const hi = p => HINDI[p] || p;
 let CATALOG = []; // set per brain() call so ask() can list brands
 // ---- state machine ----
 const FIELDS = ['date', 'slot', 'name', 'phone', 'area'];
@@ -127,13 +134,13 @@ function missing(s) { if (s.items.some(it => it.qty === null)) return 'qty'; if 
 function ask(s, field, now) {
   const k = fmtDate(addDays(now, 1)), t = fmtDate(now);
   switch (field) {
-    case 'brand': { const it = s.items.find(i => i.brand_chosen === false); const opts = brandsFor(CATALOG, it.product); return { text: `${cap(it.product)} kaunsa brand chahiye?`, keyboard: kb([...opts.map(r => [[`${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`, `brand:${it.sku}:${r.sku}`]]), [['Koi bhi chalega', `brandany:${it.sku}`]]]) }; }
-    case 'qty': { const it = s.items.find(i => i.qty === null); return { text: `${cap(it.product)} kitna chahiye? (jaise: 1 kg, 500 g)`, keyboard: kb([[['500 g', `qty:${it.product}:0.5:kg`], ['1 kg', `qty:${it.product}:1:kg`], ['2 kg', `qty:${it.product}:2:kg`]]]) }; }
-    case 'date': return { text: 'Delivery kab chahiye?', keyboard: kb([[['Aaj', `date:${t}`], ['Kal', `date:${k}`]]]) };
-    case 'slot': return { text: 'Ek detail chahiye: Delivery slot kya rakhein?', keyboard: kb([[['Morning', 'slot:morning'], ['Evening', 'slot:evening']]]) };
-    case 'name': return { text: 'Ek sawal: aapka naam kya hai?', keyboard: null };
-    case 'phone': return { text: 'Aapka phone number? (10 digit)', keyboard: null };
-    case 'area': return { text: 'Delivery area / mohalla kaunsa hai?', keyboard: kb([[['Kankarbagh', 'area:Kankarbagh'], ['Boring Road', 'area:Boring Road'], ['Patna City', 'area:Patna City']]]) };
+    case 'brand': { const it = s.items.find(i => i.brand_chosen === false); const opts = brandsFor(CATALOG, it.product); return { voice: `${hi(it.product)} कौनसा ब्रांड चाहिए?`, text: `${cap(it.product)} kaunsa brand chahiye?`, keyboard: kb([...opts.map(r => [[`${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`, `brand:${it.sku}:${r.sku}`]]), [['Koi bhi chalega', `brandany:${it.sku}`]]]) }; }
+    case 'qty': { const it = s.items.find(i => i.qty === null); return { voice: `${hi(it.product)} कितना चाहिए?`, text: `${cap(it.product)} kitna chahiye? (jaise: 1 kg, 500 g)`, keyboard: kb([[['500 g', `qty:${it.product}:0.5:kg`], ['1 kg', `qty:${it.product}:1:kg`], ['2 kg', `qty:${it.product}:2:kg`]]]) }; }
+    case 'date': return { voice: 'डिलीवरी कब चाहिए?', text: 'Delivery kab chahiye?', keyboard: kb([[['Aaj', `date:${t}`], ['Kal', `date:${k}`]]]) };
+    case 'slot': return { voice: 'डिलीवरी का स्लॉट क्या रखें, सुबह या शाम?', text: 'Ek detail chahiye: Delivery slot kya rakhein?', keyboard: kb([[['Morning', 'slot:morning'], ['Evening', 'slot:evening']]]) };
+    case 'name': return { voice: 'एक सवाल: आपका नाम क्या है?', text: 'Ek sawal: aapka naam kya hai?', keyboard: null };
+    case 'phone': return { voice: 'आपका फ़ोन नंबर बताइए।', text: 'Aapka phone number? (10 digit)', keyboard: null };
+    case 'area': return { voice: 'डिलीवरी किस इलाके में चाहिए?', text: 'Delivery area / mohalla kaunsa hai?', keyboard: kb([[['Kankarbagh', 'area:Kankarbagh'], ['Boring Road', 'area:Boring Road'], ['Patna City', 'area:Patna City']]]) };
   }
 }
 function newSession(chat_id) { return { chat_id, state: 'IDLE', items: [], delivery: { date: null, slot: null }, customer: { name: null, phone_masked: null, area: null }, change_log: [], order_id: null }; }
@@ -141,7 +148,7 @@ function nextOrderId(store, now) { const d = fmtDate(now).replace(/-/g, ''); sto
 function understood(s, now) { const lines = ['Maine yeh samjha:', ...s.items.map(it => it.qty === null ? `• ${cap(it.product)} (quantity?)` : itemLine(it))]; if (s.delivery.date) lines.push(`📅 Delivery: ${hinDate(s.delivery.date, now)}`); return lines.join('\n'); }
 function collectOrReview(s, cfg, now, msgs) {
   const m = missing(s);
-  if (m) { s.state = 'COLLECTING'; const a = ask(s, m, now); a.voice_text = a.text.replace(/\(.*?\)/g, '').trim(); msgs.push(a); return; }
+  if (m) { s.state = 'COLLECTING'; const a = ask(s, m, now); a.voice_text = a.voice || ''; delete a.voice; msgs.push(a); return; }
   s.state = 'REVIEW';
   msgs.push({ text: summary(s, cfg, now), keyboard: kb([[['✅ Confirm order', 'confirm'], ['✏️ Kuch badalna hai', 'edit']], [['❌ Cancel', 'cancel']]]) });
 }

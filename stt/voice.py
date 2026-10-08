@@ -13,6 +13,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 
 import requests
 
@@ -80,6 +81,8 @@ def voice_send(chat_id, text, caption=None, keyboard=None):
         return {"ok": False, "reason": "empty text"}
     if len(text) > VOICE_MAX_CHARS:
         return {"ok": False, "reason": f"text over {VOICE_MAX_CHARS} chars"}
+    if not re.search(r"[\u0900-\u097F]", text) or re.search(r"[A-Za-z]", text):  # owner rule: Sarvam gets Devanagari only
+        return {"ok": False, "reason": "voice text must be Devanagari only"}
     env = _env()
     for k in ("SARVAM_API_KEY", "SARVAM_VOICE_ID", "TELEGRAM_BOT_TOKEN"):
         if not env.get(k):
@@ -103,5 +106,7 @@ def voice_send(chat_id, text, caption=None, keyboard=None):
 if __name__ == "__main__":  # self-check without network: keyboard conversion and caps
     assert _keyboard({"rows": [{"row": {"buttons": [{"text": "A", "additionalFields": {"callback_data": "a"}}]}}]}) == {"inline_keyboard": [[{"text": "A", "callback_data": "a"}]]}
     assert _keyboard(None) is None
+    assert voice_send("1", "Namaste ji")["reason"] == "voice text must be Devanagari only"
+    assert voice_send("1", "नमस्ते Kuiklo")["reason"] == "voice text must be Devanagari only"
     assert voice_send("1", "x" * (VOICE_MAX_CHARS + 1))["reason"].startswith("text over")
     print("voice self-check ok")
