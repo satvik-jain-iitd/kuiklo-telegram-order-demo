@@ -128,7 +128,7 @@ function maskPhone(p) { const d = String(p).replace(/\D/g, ''); return d.length 
 // ---- brand change by text ("chawal ka dusra brand", "daawat rozana gold") ----
 function brandRowsInText(text, catalog) {
   const t = ' ' + String(text || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ') + ' ';
-  const hit = r => { const b = r.brand.toLowerCase(); if (b !== 'local' && b !== 'farm fresh' && t.includes(' ' + b + ' ')) return 2; const v = r.variant.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 3); return v.length && v.every(w => t.includes(' ' + w + ' ')) ? 1 : 0; };
+  const hit = r => { const b = r.brand.toLowerCase(); const bh = (b !== 'local' && b !== 'farm fresh' && t.includes(' ' + b + ' ')) ? 2 : 0; const v = r.variant.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 3); const vh = (v.length && v.every(w => t.includes(' ' + w + ' '))) ? 1 : 0; return bh + vh; };
   return catalog.map(r => [hit(r), r]).filter(([h]) => h > 0).sort((a, b) => b[0] - a[0]).map(([, r]) => r);
 }
 function brandIntent(text, s) {
@@ -177,7 +177,7 @@ function collectOrReview(s, cfg, now, msgs) {
 }
 function changeSummary(s, old, nu, cfg) {
   const before = price({ items: s.items }, cfg), after = price({ items: s.items.map(it => it.sku === old.sku ? nu : it) }, cfg);
-  return ['🔁 <b>Change summary</b>', `${cap(old.product)}: ${old.brand} ${old.qty} ${old.unit} ${money(old.line_total)} → ${nu.brand} ${nu.qty} ${nu.unit} ${money(nu.line_total)} (${nu.line_total >= old.line_total ? '+' : '-'}${money(Math.abs(nu.line_total - old.line_total))})`,
+  return ['🔁 <b>Change summary</b>', `${cap(old.product)}: ${old.brand} ${old.variant} ${old.qty} ${old.unit} ${money(old.line_total)} → ${nu.brand} ${nu.variant} ${nu.qty} ${nu.unit} ${money(nu.line_total)} (${nu.line_total >= old.line_total ? '+' : '-'}${money(Math.abs(nu.line_total - old.line_total))})`,
     `Items subtotal: ${money(before.items_subtotal)} → ${money(after.items_subtotal)}`, 'Delivery and handling fees: unchanged', `TOTAL: ${money(before.total)} → ${money(after.total)}`].join('\n');
 }
 
@@ -187,9 +187,11 @@ function answerQuestion(text, s, catalog, cfg, now) {
   if (/stock|bache|bacha|kitne hain store|available kitn/.test(t)) return 'Stock ki jaankari main nahi de sakta.';
   if (/brand|option|variety|kaun ?se/.test(t)) { const p = tokens(t).map(productOf).find(Boolean); if (p && s.items.some(it => it.product === p)) return null; if (p) { const b = brandsFor(catalog, p); return b.length ? `${cap(p)} ke brand options (demo catalog):\n` + b.map(r => `• ${r.brand} ${r.variant} ${money(r.unit_price_inr)}/${r.unit}`).join('\n') : `${cap(p)} abhi catalog mein nahi hai.`; } }
   const has = s.items.length > 0;
-  if (/kitne item|items? kitn|kya kya hai|list/.test(t)) return has ? `Aapke order mein ${s.items.length} item hain:\n` + s.items.map(itemLine).join('\n') : null;
-  if (/total|kitna (paisa|hua|bill)|amount/.test(t)) return has ? `Total: ${money(price(s, cfg).total)} (demo values, COD)` : null;
-  if (/delivery|kab aayega|kab milega/.test(t)) return has && s.delivery.date ? `📦 Delivery: ${hinDate(s.delivery.date, now)}, ${s.delivery.slot || '?'} slot` : null; // no order -> the FAQ bot answers
+  const mine = /\b(mera|mere|meri|my|order|is order|yeh order)\b/.test(t); // about THIS order, not Kuiklo in general
+  if (has && /kitne item|items? kitn|kya kya hai|order.*list|list.*order/.test(t)) return `Aapke order mein ${s.items.length} item hain:\n` + s.items.map(itemLine).join('\n');
+  if (has && mine && /total|kitna (paisa|hua|bill)|amount/.test(t)) return `Total: ${money(price(s, cfg).total)} (demo values, COD)`;
+  if (has && s.delivery.date && (/kab (aayega|milega|pahunchega|aega)/.test(t) || (mine && /delivery|slot/.test(t)))) return `📦 Delivery: ${hinDate(s.delivery.date, now)}, ${s.delivery.slot || '?'} slot`;
+  // anything else (kahan deliver karte ho, best app, charges) -> the FAQ bot
   return null;
 }
 
@@ -249,6 +251,10 @@ function brain(update, store, cfg, now) {
     if (m === 'phone' && /\d{10}/.test(text.replace(/\D/g, ''))) { s.customer.phone_masked = maskPhone(text); collectOrReview(s, cfg, now, msgs); return { messages: msgs.map(x => ({ chat_id: cid, ...x })), session: s }; }
     if (m === 'area' && tokens(text).every(t => !productOf(t))) { s.customer.area = text.trim().slice(0, 40); collectOrReview(s, cfg, now, msgs); return { messages: msgs.map(x => ({ chat_id: cid, ...x })), session: s }; }
   }
+  // yes/no typed inside the swap flow
+  if (s.state === 'SWAP_PENDING' && /^(haan|han|ha|yes|ok|confirm|theek|thik|kar do|kardo)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'swapconfirm' }, store, cfg, now);
+  if (s.state === 'SWAP_PENDING' && /^(nahi|no|cancel|rehne do|purana)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'swapcancel' }, store, cfg, now);
+  if (s.state === 'SWAP_WINDOW' && /^(ok|okay|theek|thik|sab theek|thanks|shukriya|done)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'ok' }, store, cfg, now);
   // yes/no typed fallback in REVIEW
   if (s.state === 'REVIEW' && /^(haan|han|ha|yes|ok|confirm|theek|thik)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'confirm' }, store, cfg, now);
   if (s.state === 'REVIEW' && /^(nahi|no|cancel)\b/i.test(text.trim())) return brain({ ...update, text: '', callback_data: 'cancel' }, store, cfg, now);
@@ -256,6 +262,8 @@ function brain(update, store, cfg, now) {
   // brand change typed as text (works before confirm, and inside the 60 s window after confirm)
   if (s.items.length && ['COLLECTING', 'REVIEW', 'SWAP_WINDOW', 'SWAP_PENDING'].includes(s.state)) {
     const rows = brandRowsInText(text, catalog);
+    const same = rows.length && s.items.find(it => it.sku === rows[0].sku);
+    if (same) { msgs.push({ text: `${cap(same.product)} pehle se ${same.brand} ${same.variant} hi hai. Koi aur brand chahiye to naam likhiye ya "${same.product} ka brand badlo" bhejiye.`, keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
     const target = rows.map(r => [r, s.items.find(it => it.product === r.product && it.sku !== r.sku)]).find(([, it]) => it);
     if (target) {
       const [row, old] = target;
