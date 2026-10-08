@@ -74,7 +74,7 @@ const nodes = [
     { id: 'c9', name: 'kb_url', type: 'string', value: 'http://127.0.0.1:8787/ask' },
     { id: 'c10', name: 'voice_url', type: 'string', value: 'http://127.0.0.1:8787/voice' },
     { id: 'c11', name: 'voice_enabled', type: 'boolean', value: true },
-    { id: 'c12', name: 'greeting_text', type: 'string', value: 'Namaste. Kuiklo use karne ke liye thank you. Main founder aur CEO Shyam Gupta. Bataiye, aapki kaise madad kar sakta hoon?' },
+    { id: 'c12', name: 'greeting_text', type: 'string', value: 'नमस्ते। क्विकलो यूज़ करने के लिए थैंक यू। मैं फ़ाउंडर एंड सीईओ श्याम गुप्ता। बताइए, आपकी कैसे मदद कर सकता हूँ?' },
     { id: 'c6', name: 'use_llm_fallback', type: 'boolean', value: true },
     { id: 'c7', name: 'llm_model', type: 'string', value: 'deepseek/deepseek-v3.2' },
     { id: 'c8', name: 'catalog_json', type: 'string', value: JSON.stringify(catalog) },

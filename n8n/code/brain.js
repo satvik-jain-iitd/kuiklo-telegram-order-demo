@@ -210,7 +210,7 @@ function brain(update, store, cfg, now) {
 
   // ---- text (typed or transcribed) ----
   if (!text.trim()) { msgs.push({ text: 'Kuch sunai nahi diya. Voice note dobara bhejein ya order type karein.', keyboard: null }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
-  if (/^\/start/.test(text)) { store.sessions[cid] = newSession(cid); msgs.push({ text: '👋 Kuiklo demo bot mein swagat hai!\n\nVoice note ya text bhejein, jaise:\n"1 kg atta, 2 roti, 3 kg bhindi, kal subah"\n\n⚠️ Yeh demo hai. Prices demo values hain.', keyboard: null, voice_text: cfg.greeting_text || '' }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
+  if (/^\/start/.test(text)) { store.sessions[cid] = newSession(cid); msgs.push({ text: '👋 क्विकलो डेमो बॉट में स्वागत है!\n\nवॉइस नोट या टेक्स्ट भेजिए, जैसे:\n"1 kg atta, 2 roti, 3 kg bhindi, kal subah"\n\n⚠️ यह डेमो है। दाम डेमो वैल्यू हैं।', keyboard: null, voice_text: cfg.greeting_text || '' }); return { messages: msgs.map(m => ({ chat_id: cid, ...m })), session: s }; }
 
   // collecting a typed answer
   if (s.state === 'COLLECTING') {
